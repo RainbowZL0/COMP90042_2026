@@ -3,8 +3,9 @@ import sys
 import json
 import numpy as np
 
+
 ######
-#main#
+# main#
 ######
 
 def main(args):
@@ -24,18 +25,18 @@ def main(args):
     try:
         f, acc = [], []
 
-        #iterate through the groundtruth instances
+        # iterate through the groundtruth instances
         for claim_id, claim in sorted(groundtruth.items()):
             if claim_id in predictions and \
                 "claim_label" in predictions[claim_id] and \
                 "evidences" in predictions[claim_id]:
 
-                #check claim level label
+                # check claim level label
                 instance_correct = 0.0
                 if predictions[claim_id]["claim_label"] == claim["claim_label"]:
                     instance_correct = 1.0
-                
-                #check retrieved evidences
+
+                # check retrieved evidences
                 evidence_correct = 0
                 evidence_recall = 0.0
                 evidence_precision = 0.0
@@ -49,7 +50,8 @@ def main(args):
                         evidence_recall = float(evidence_correct) / len(claim["evidences"])
                         evidence_precision = \
                             float(evidence_correct) / len(predictions[claim_id]["evidences"])
-                        evidence_fscore = (2*evidence_precision*evidence_recall)/(evidence_precision+evidence_recall)
+                        evidence_fscore = (2 * evidence_precision * evidence_recall) / (
+                                evidence_precision + evidence_recall)
 
                 if args.verbose:
                     print("groundtruth =", claim)
@@ -59,35 +61,42 @@ def main(args):
                     print("evidence precision =", evidence_precision)
                     print("evidence fscore =", evidence_fscore, "\n\n")
 
-                #add the metric results
+                # add the metric results
                 acc.append(instance_correct)
                 f.append(evidence_fscore)
 
-        #compute aggregate performance
+        # compute aggregate performance
         mean_f = np.mean(f if len(f) > 0 else [0.0])
         mean_acc = np.mean(acc if len(acc) > 0 else [0.0])
         if mean_f == 0.0 and mean_acc == 0.0:
             hmean = 0.0
         else:
-            hmean = (2*mean_f*mean_acc)/(mean_f+mean_acc)
+            hmean = (2 * mean_f * mean_acc) / (mean_f + mean_acc)
 
         print("Evidence Retrieval F-score (F)    =", mean_f)
         print("Claim Classification Accuracy (A) =", mean_acc)
         print("Harmonic Mean of F and A          =", hmean)
-                
+
     except Exception as error:
         print("Error:", error)
         raise SystemExit
 
+
 if __name__ == "__main__":
 
-    #parser arguments
-    desc = "Evaluation script that computes evidence retrieval f-score, claim classification accuracy, and aggregate performance."
+    # parser arguments
+    desc = ("Evaluation script that computes evidence retrieval f-score, claim classification accuracy, and aggregate "
+            "performance.")
     parser = argparse.ArgumentParser(description=desc)
 
-    #arguments
-    parser.add_argument("--predictions", required=True, help="json file containing the claim label predictions and retrieved evidences produced by a system")
-    parser.add_argument("--groundtruth", required=True, help="json file containing the ground truth claim labels and evidences")
+    # arguments
+    parser.add_argument(
+        "--predictions", required=True,
+        help="json file containing the claim label predictions and retrieved evidences produced by a system"
+        )
+    parser.add_argument(
+        "--groundtruth", required=True, help="json file containing the ground truth claim labels and evidences"
+        )
     parser.add_argument("--verbose", action="store_true", help="turn on debug prints")
     args = parser.parse_args()
 
