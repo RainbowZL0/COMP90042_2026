@@ -51,7 +51,7 @@ def main(args):
                         evidence_precision = \
                             float(evidence_correct) / len(predictions[claim_id]["evidences"])
                         evidence_fscore = (2 * evidence_precision * evidence_recall) / (
-                                evidence_precision + evidence_recall)
+                            evidence_precision + evidence_recall)
 
                 if args.verbose:
                     print("groundtruth =", claim)
@@ -93,10 +93,10 @@ if __name__ == "__main__":
     parser.add_argument(
         "--predictions", required=True,
         help="json file containing the claim label predictions and retrieved evidences produced by a system"
-        )
+    )
     parser.add_argument(
         "--groundtruth", required=True, help="json file containing the ground truth claim labels and evidences"
-        )
+    )
     parser.add_argument("--verbose", action="store_true", help="turn on debug prints")
     args = parser.parse_args()
 

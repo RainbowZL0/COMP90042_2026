@@ -13,6 +13,10 @@ dev = [
     "pytest>=7.0",
 ]
 
+# ---- pytest config ----
+# `pythonpath = ["."]` lets `from src.data.schema import ...` resolve when
+# running `pytest` from the project root, without needing to install the
+# project as an editable package.
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
