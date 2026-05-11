@@ -6,9 +6,6 @@ import sys
 import time
 from pathlib import Path
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT))
-
 from src.classification.joint import JointCrossEncoderClassifier
 from src.config import CONFIG, get_device
 from src.data.loader import load_claims, load_evidence
@@ -19,6 +16,9 @@ from src.retrieval.two_stage import TwoStageRetriever
 from src.utils.io import write_predictions
 from src.utils.logging_config import configure_logging, get_logger
 from src.utils.seed import set_seed
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PROJECT_ROOT))
 
 LOGGER = get_logger("run_joint_pipeline")
 

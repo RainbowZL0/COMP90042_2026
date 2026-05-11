@@ -1,6 +1,10 @@
-data/*
-outputs/*
+/data/*
+/outputs/*
+/logs/*
 
+!/data/.gitkeep
+!/logs/.gitkeep
+!/outputs/.gitkeep
 
 ### Python template
 # Byte-compiled / optimized / DLL files
