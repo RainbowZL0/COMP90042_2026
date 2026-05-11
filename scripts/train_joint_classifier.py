@@ -12,6 +12,7 @@ import random
 import sys
 from collections import Counter
 from pathlib import Path
+
 from src.classification.joint import JointCrossEncoderClassifier, train_joint_classifier
 from src.classification.joint_data import (
     LABELS,
@@ -27,7 +28,6 @@ from src.retrieval.reranker import CrossEncoderReranker
 from src.retrieval.two_stage import TwoStageRetriever
 from src.utils.logging_config import configure_logging, get_logger
 from src.utils.seed import set_seed
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))

@@ -11,6 +11,7 @@ import argparse
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
+
 from src.classification.joint import JointCrossEncoderClassifier
 from src.config import CONFIG, get_device
 from src.data.loader import load_claims, load_evidence
@@ -19,7 +20,6 @@ from src.utils.logging_config import configure_logging, get_logger
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
-
 
 LOGGER = get_logger("eval_joint_classifier_gold")
 

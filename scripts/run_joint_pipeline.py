@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--reranker_max_length", type=int, default=192)
     parser.add_argument(
         "--classifier_batch_size", type=int, default=32
-        )  # currently stored on classifier call path only indirectly
+    )  # currently stored on classifier call path only indirectly
     parser.add_argument("--classifier_max_length", type=int, default=256)
     parser.add_argument("--max_evidences", type=int, default=3)
     parser.add_argument("--reranker_dir", type=Path, default=CONFIG.paths.outputs / "reranker" / "model")
