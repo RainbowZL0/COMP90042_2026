@@ -42,7 +42,7 @@ def write_predictions(predictions: dict[str, Prediction], path: PathLike) -> Non
         }
 
     with path.open("w", encoding="utf-8") as f:
-        json.dump(out, f, ensure_ascii=False, indent=2)
+        json.dump(out, f, ensure_ascii=True, indent=2)
 
 
 def read_predictions(path: PathLike) -> dict[str, Prediction]:

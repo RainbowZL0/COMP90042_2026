@@ -166,3 +166,20 @@ class TestEvalPyCompatibility:
         assert "F-score (F)    = 1.0" in result.stdout
         assert "Accuracy (A) = 1.0" in result.stdout
         assert "Harmonic Mean of F and A          = 1.0" in result.stdout
+
+
+def test_write_predictions_is_ascii_safe_for_windows_default_encoding(tmp_path):
+    """eval.py opens files without encoding on Windows, so output must be ASCII-safe."""
+    from src.data.schema import ClaimLabel, Prediction
+    from src.utils.io import write_predictions
+
+    pred = Prediction(
+        claim_id="claim-cn",
+        claim_text="中文 claim text should be escaped",
+        claim_label=ClaimLabel.SUPPORTS,
+        evidence_ids=("evidence-1",),
+    )
+    path = tmp_path / "predictions.json"
+    write_predictions({"claim-cn": pred}, path)
+    raw = path.read_bytes()
+    raw.decode("ascii")

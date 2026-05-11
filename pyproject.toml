@@ -7,12 +7,17 @@ requires-python = ">=3.12"
 dependencies = [
     "bm25s>=0.3.8",
     "numpy>=2.4.4",
+    "torch>=2.0",
+    "transformers>=4.40",
+    "tqdm>=4.66",
 ]
+
 
 [dependency-groups]
 dev = [
     "pytest>=7.0",
 ]
+
 
 # ---- pytest config ----
 # `pythonpath = ["."]` lets `from src.data.schema import ...` resolve when
@@ -23,3 +28,15 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short --strict-markers"
 pythonpath = ["."]
+
+
+[[tool.uv.index]]
+name = "pytorch_cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
+
+
+[tool.uv.sources]
+torch = [{ index = "pytorch_cu130" }]
+torchaudio = [{ index = "pytorch_cu130" }]
+torchvision = [{ index = "pytorch_cu130" }]
