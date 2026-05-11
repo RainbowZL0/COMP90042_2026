@@ -1,6 +1,8 @@
 import argparse
 import sys
 import json
+import traceback
+
 import numpy as np
 
 
@@ -9,18 +11,21 @@ import numpy as np
 ######
 
 def main(args):
-
     try:
-        predictions = json.load(open(args.predictions))
-    except:
+        with open(args.predictions, "r", encoding="utf-8") as f:
+            predictions = json.load(f)
+    except Exception:
+        traceback.print_exc()
         print("Error loading predictions json file:", args.predictions)
-        raise SystemExit
+        raise SystemExit(1)
 
     try:
-        groundtruth = json.load(open(args.groundtruth))
-    except:
+        with open(args.groundtruth, "r", encoding="utf-8") as f:
+            groundtruth = json.load(f)
+    except Exception:
+        traceback.print_exc()
         print("Error loading groundtruth json file:", args.groundtruth)
-        raise SystemExit
+        raise SystemExit(1)
 
     try:
         f, acc = [], []

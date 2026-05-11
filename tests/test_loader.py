@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from src.config import CONFIG
 from src.data.loader import load_claims, load_evidence
 from src.data.schema import ClaimLabel
 
@@ -93,7 +94,7 @@ class TestLoadClaims:
                     "claim-1": {
                         "claim_text": "x",
                         "claim_label": "SUPPORTS",
-                        "evidences": "evidence-1",  # should be a list, not a string
+                        "evidences": "evidence-1",  # should be list
                     }
                 }
             ),
@@ -102,13 +103,18 @@ class TestLoadClaims:
         with pytest.raises(ValueError, match="must be list"):
             load_claims(bad)
 
-    def test_real_sample_files_load(self):
-        """Smoke test against the real sample data shipped with the project."""
-        sample_dir = Path("/mnt/project")
-        train_sample = sample_dir / "train-claims_sample.json"
-        if not train_sample.exists():
-            pytest.skip(f"sample file not at {train_sample}")
-        claims = load_claims(train_sample)
+    def test_real_train_file_loads(self):
+        """Smoke test against the user's actual train-claims.json.
+
+        Skipped if the real file isn't yet in data/ (e.g. running on CI
+        before data is provisioned). Uses CONFIG paths so it works on
+        any OS without hard-coded paths.
+        """
+        if not CONFIG.paths.train_claims.exists():
+            pytest.skip(
+                f"real train file not present at {CONFIG.paths.train_claims}"
+            )
+        claims = load_claims(CONFIG.paths.train_claims)
         assert len(claims) > 0
         for c in claims.values():
             assert c.is_labeled
