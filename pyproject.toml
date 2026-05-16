@@ -11,6 +11,10 @@ dependencies = [
     "transformers>=4.40",
     "tqdm>=4.66",
     "mlflow>=3.12.0",
+    "nbdime>=4.0.4",
+    "sentence-transformers>=5.5.0",
+    "psutil>=7.2.2",
+    "ipykernel>=7.2.0",
 ]
 
 
