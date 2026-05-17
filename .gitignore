@@ -1,6 +1,12 @@
 /data/*
 /outputs/*
 /logs/*
+/outputs_notebook_ce/*
+/outputs_notebook_retrieval_branch/*
+/outputs_notebook_final_v6/*
+/outputs_notebook_classifier_branch/*
+
+CLAUDE.md
 
 !/data/.gitkeep
 !/logs/.gitkeep
@@ -165,3 +171,4 @@ cython_debug/
 
 # PyCharm
 .idea/
+!/outputs_notebook_retrieval_branch/

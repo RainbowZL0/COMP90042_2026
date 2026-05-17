@@ -15,6 +15,8 @@ dependencies = [
     "sentence-transformers>=5.5.0",
     "psutil>=7.2.2",
     "ipykernel>=7.2.0",
+    "pandas-stubs~=2.3.3",
+    "accelerate>=1.13.0",
 ]
 
 
