@@ -17,6 +17,8 @@ dependencies = [
     "ipykernel>=7.2.0",
     "pandas-stubs~=2.3.3",
     "accelerate>=1.13.0",
+    "scipy-stubs~=1.17.1",
+    "nltk>=3.9.4",
 ]
 
 

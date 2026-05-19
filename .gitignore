@@ -1,10 +1,11 @@
 /data/*
 /outputs/*
 /logs/*
-/outputs_notebook_ce/*
-/outputs_notebook_retrieval_branch/*
-/outputs_notebook_final_v6/*
-/outputs_notebook_classifier_branch/*
+*.pkl
+*.pt
+*.zip
+/memory/*
+/outputs*/
 
 CLAUDE.md
 
