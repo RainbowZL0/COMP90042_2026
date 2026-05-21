@@ -1,376 +1,265 @@
 \documentclass[11pt]{article}
 
-% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
-% Change to "preprint" to generate a non-anonymous version with page numbers.
-\usepackage[review]{acl}
+\usepackage[final]{acl}
 
-% Standard package includes
 \usepackage{times}
 \usepackage{latexsym}
-
-% For proper rendering and hyphenation of words containing Latin characters (including in bib files)
 \usepackage[T1]{fontenc}
-% For Vietnamese characters
-% \usepackage[T5]{fontenc}
-% See https://www.latex-project.org/help/documentation/encguide.pdf for other character sets
-
-% This assumes your files are encoded as UTF8
 \usepackage[utf8]{inputenc}
-
-% This is not strictly necessary, and may be commented out,
-% but it will improve the layout of the manuscript,
-% and will typically save some space.
 \usepackage{microtype}
-
-% This is also not strictly necessary, and may be commented out.
-% However, it will improve the aesthetics of text in
-% the typewriter font.
 \usepackage{inconsolata}
 
-%Including images in your LaTeX document requires adding
-%additional package(s)
+\usepackage{amsmath}
+\usepackage{booktabs}
 \usepackage{graphicx}
 
-% If the title and author information does not fit in the area allocated, uncomment the following
-%
-%\setlength\titlebox{<dim>}
-%
-% and set <dim> to something 5cm or larger.
+\title{Fact-Checking Climate Claims with Sparse Retrieval and Cross-Encoder Reranking}
 
-\title{Instructions for *ACL Proceedings}
-
-% Author information can be set in various styles:
-% For several authors from the same institution:
-% \author{Author 1 \and ... \and Author n \\
-%         Address line \\ ... \\ Address line}
-% if the names do not fit well on one line use
-%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
-% For authors from different institutions:
-% \author{Author 1 \\ Address line \\  ... \\ Address line
-%         \And  ... \And
-%         Author n \\ Address line \\ ... \\ Address line}
-% To start a separate ``row'' of authors use \AND, as in
-% \author{Author 1 \\ Address line \\  ... \\ Address line
-%         \AND
-%         Author 2 \\ Address line \\ ... \\ Address line \And
-%         Author 3 \\ Address line \\ ... \\ Address line}
-
-\author{First Author \\
-  Affiliation / Address line 1 \\
-  Affiliation / Address line 2 \\
-  Affiliation / Address line 3 \\
-  \texttt{email@domain} \\\And
-  Second Author \\
-  Affiliation / Address line 1 \\
-  Affiliation / Address line 2 \\
-  Affiliation / Address line 3 \\
-  \texttt{email@domain} \\}
-
-%\author{
-%  \textbf{First Author\textsuperscript{1}},
-%  \textbf{Second Author\textsuperscript{1,2}},
-%  \textbf{Third T. Author\textsuperscript{1}},
-%  \textbf{Fourth Author\textsuperscript{1}},
-%\\
-%  \textbf{Fifth Author\textsuperscript{1,2}},
-%  \textbf{Sixth Author\textsuperscript{1}},
-%  \textbf{Seventh Author\textsuperscript{1}},
-%  \textbf{Eighth Author \textsuperscript{1,2,3,4}},
-%\\
-%  \textbf{Ninth Author\textsuperscript{1}},
-%  \textbf{Tenth Author\textsuperscript{1}},
-%  \textbf{Eleventh E. Author\textsuperscript{1,2,3,4,5}},
-%  \textbf{Twelfth Author\textsuperscript{1}},
-%\\
-%  \textbf{Thirteenth Author\textsuperscript{3}},
-%  \textbf{Fourteenth F. Author\textsuperscript{2,4}},
-%  \textbf{Fifteenth Author\textsuperscript{1}},
-%  \textbf{Sixteenth Author\textsuperscript{1}},
-%\\
-%  \textbf{Seventeenth S. Author\textsuperscript{4,5}},
-%  \textbf{Eighteenth Author\textsuperscript{3,4}},
-%  \textbf{Nineteenth N. Author\textsuperscript{2,5}},
-%  \textbf{Twentieth Author\textsuperscript{1}}
-%\\
-%\\
-%  \textsuperscript{1}Affiliation 1,
-%  \textsuperscript{2}Affiliation 2,
-%  \textsuperscript{3}Affiliation 3,
-%  \textsuperscript{4}Affiliation 4,
-%  \textsuperscript{5}Affiliation 5
-%\\
-%  \small{
-%    \textbf{Correspondence:} \href{mailto:email@domain}{email@domain}
-%  }
-%}
+\author{Group 56}
 
 \begin{document}
 \maketitle
+
 \begin{abstract}
-This document is a supplement to the general instructions for *ACL authors. It contains instructions for using the \LaTeX{} style files for ACL conferences.
-The document itself conforms to its own specifications, and is therefore an example of what your manuscript should look like.
-These instructions should be used both for papers submitted for review and for final versions of accepted papers.
+We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, a relative-delta rule selects a variable number of final evidence passages, and a second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward \textsc{Supports} and zero recall for \textsc{Refutes}.
 \end{abstract}
 
 \section{Introduction}
 
-These instructions are for authors submitting papers to *ACL conferences using \LaTeX. They are not self-contained. All authors must follow the general instructions for *ACL proceedings,\footnote{\url{http://acl-org.github.io/ACLPUB/formatting.html}} and this document contains additional instructions for the \LaTeX{} style files.
+Automated fact-checking requires both finding relevant evidence and reasoning over it. This coupling is central to FEVER-style verification \citep{thorne2018fever} and is especially important for climate claims, where statements are often paraphrastic, evidence may be multi-sentence, and labels can depend on uncertainty or disagreement rather than simple true/false judgments \citep{diggelmann2020climatefever}. In this assignment, each system receives a claim and must return evidence passage identifiers from a corpus of 1,208,827 passages, together with one of four labels: \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info} (NEI), or \textsc{Disputed}.
 
-The templates include the \LaTeX{} source of this document (\texttt{acl\_latex.tex}),
-the \LaTeX{} style file used to format it (\texttt{acl.sty}),
-an ACL bibliography style (\texttt{acl\_natbib.bst}),
-an example bibliography (\texttt{custom.bib}),
-and the bibliography for the ACL Anthology (\texttt{anthology.bib}).
+The main challenge is that the final score rewards balanced performance. A strong classifier cannot help if the right evidence never enters the candidate pool, while high-recall retrieval is insufficient if the selected passages are noisy or the classifier falls back to majority-class behavior. Our design therefore separates the problem into three questions: can sparse retrieval include the gold evidence in a manageable pool, can a cross-encoder reranker improve the final evidence set, and can a lightweight classifier use that evidence to improve over a majority-label baseline?
 
-\section{Engines}
+We find that the retrieval side is effective but still far from solved. Stemming and BM25 tuning improve recall@500, and MiniLM reranking plus relative-delta evidence selection raises development evidence F-score from 0.1234 for raw BM25 top-5 to 0.2448. The classifier, however, improves accuracy over an all-\textsc{Supports} baseline by only 3.9 percentage points. Error analysis shows that retrieval failures and classification failures are both substantial, and oracle retrieval does not automatically improve label accuracy, suggesting that evidence reasoning remains brittle.
 
-To produce a PDF file, pdf\LaTeX{} is strongly recommended (over original \LaTeX{} plus dvips+ps2pdf or dvipdf).
-The style file \texttt{acl.sty} can also be used with
-lua\LaTeX{} and
-Xe\LaTeX{}, which are especially suitable for text in non-Latin scripts.
-The file \texttt{acl\_lualatex.tex} in this repository provides
-an example of how to use \texttt{acl.sty} with either
-lua\LaTeX{} or
-Xe\LaTeX{}.
+\section{Approach}
 
-\section{Preamble}
+\subsection{Task Formulation}
 
-The first line of the file must be
-\begin{quote}
-\begin{verbatim}
-\documentclass[11pt]{article}
-\end{verbatim}
-\end{quote}
+For each claim $c$, the system ranks evidence passages $e \in E$ and returns a selected evidence set $R(c)$ plus a label $\hat{y} \in Y$, where $Y=\{\textsc{Supports},\textsc{Refutes},\textsc{NEI},\textsc{Disputed}\}$. The official score reports evidence retrieval F-score $F$, label accuracy $A$, and their harmonic mean:
 
-To load the style file in the review version:
-\begin{quote}
-\begin{verbatim}
-\usepackage[review]{acl}
-\end{verbatim}
-\end{quote}
-For the final version, omit the \verb|review| option:
-\begin{quote}
-\begin{verbatim}
-\usepackage{acl}
-\end{verbatim}
-\end{quote}
-
-To use Times Roman, put the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\usepackage{times}
-\end{verbatim}
-\end{quote}
-(Alternatives like txfonts or newtx are also acceptable.)
-
-Please see the \LaTeX{} source of this document for comments on other packages that may be useful.
-
-Set the title and author using \verb|\title| and \verb|\author|. Within the author list, format multiple authors using \verb|\and| and \verb|\And| and \verb|\AND|; please see the \LaTeX{} source for examples.
-
-By default, the box containing the title and author names is set to the minimum of 5 cm. If you need more space, include the following in the preamble:
-\begin{quote}
-\begin{verbatim}
-\setlength\titlebox{<dim>}
-\end{verbatim}
-\end{quote}
-where \verb|<dim>| is replaced with a length. Do not set this length smaller than 5 cm.
-
-\section{Document Body}
-
-\subsection{Footnotes}
-
-Footnotes are inserted with the \verb|\footnote| command.\footnote{This is a footnote.}
-
-\subsection{Tables and figures}
-
-See Table~\ref{tab:accents} for an example of a table and its caption.
-\textbf{Do not override the default caption sizes.}
-
-\begin{table}
-  \centering
-  \begin{tabular}{lc}
-    \hline
-    \textbf{Command} & \textbf{Output} \\
-    \hline
-    \verb|{\"a}|     & {\"a}           \\
-    \verb|{\^e}|     & {\^e}           \\
-    \verb|{\`i}|     & {\`i}           \\
-    \verb|{\.I}|     & {\.I}           \\
-    \verb|{\o}|      & {\o}            \\
-    \verb|{\'u}|     & {\'u}           \\
-    \verb|{\aa}|     & {\aa}           \\\hline
-  \end{tabular}
-  \begin{tabular}{lc}
-    \hline
-    \textbf{Command} & \textbf{Output} \\
-    \hline
-    \verb|{\c c}|    & {\c c}          \\
-    \verb|{\u g}|    & {\u g}          \\
-    \verb|{\l}|      & {\l}            \\
-    \verb|{\~n}|     & {\~n}           \\
-    \verb|{\H o}|    & {\H o}          \\
-    \verb|{\v r}|    & {\v r}          \\
-    \verb|{\ss}|     & {\ss}           \\
-    \hline
-  \end{tabular}
-  \caption{Example commands for accented characters, to be used in, \emph{e.g.}, Bib\TeX{} entries.}
-  \label{tab:accents}
-\end{table}
-
-As much as possible, fonts in figures should conform
-to the document fonts. See Figure~\ref{fig:experiments} for an example of a figure and its caption.
-
-Using the \verb|graphicx| package graphics files can be included within figure
-environment at an appropriate point within the text.
-The \verb|graphicx| package supports various optional arguments to control the
-appearance of the figure.
-You must include it explicitly in the \LaTeX{} preamble (after the
-\verb|\documentclass| declaration and before \verb|\begin{document}|) using
-\verb|\usepackage{graphicx}|.
-
-\begin{figure}[t]
-  \includegraphics[width=\columnwidth]{example-image-golden}
-  \caption{A figure with a caption that runs for more than one line.
-    Example image is usually available through the \texttt{mwe} package
-    without even mentioning it in the preamble.}
-  \label{fig:experiments}
-\end{figure}
-
-\begin{figure*}[t]
-  \includegraphics[width=0.48\linewidth]{example-image-a} \hfill
-  \includegraphics[width=0.48\linewidth]{example-image-b}
-  \caption {A minimal working example to demonstrate how to place
-    two images side-by-side.}
-\end{figure*}
-
-\subsection{Hyperlinks}
-
-Users of older versions of \LaTeX{} may encounter the following error during compilation:
-\begin{quote}
-\verb|\pdfendlink| ended up in different nesting level than \verb|\pdfstartlink|.
-\end{quote}
-This happens when pdf\LaTeX{} is used and a citation splits across a page boundary. The best way to fix this is to upgrade \LaTeX{} to 2018-12-01 or later.
-
-\subsection{Citations}
-
-\begin{table*}
-  \centering
-  \begin{tabular}{lll}
-    \hline
-    \textbf{Output}           & \textbf{natbib command} & \textbf{ACL only command} \\
-    \hline
-    \citep{Gusfield:97}       & \verb|\citep|           &                           \\
-    \citealp{Gusfield:97}     & \verb|\citealp|         &                           \\
-    \citet{Gusfield:97}       & \verb|\citet|           &                           \\
-    \citeyearpar{Gusfield:97} & \verb|\citeyearpar|     &                           \\
-    \citeposs{Gusfield:97}    &                         & \verb|\citeposs|          \\
-    \hline
-  \end{tabular}
-  \caption{\label{citation-guide}
-    Citation commands supported by the style file.
-    The style is based on the natbib package and supports all natbib citation commands.
-    It also supports commands defined in previous ACL style files for compatibility.
-  }
-\end{table*}
-
-Table~\ref{citation-guide} shows the syntax supported by the style files.
-We encourage you to use the natbib styles.
-You can use the command \verb|\citet| (cite in text) to get ``author (year)'' citations, like this citation to a paper by \citet{Gusfield:97}.
-You can use the command \verb|\citep| (cite in parentheses) to get ``(author, year)'' citations \citep{Gusfield:97}.
-You can use the command \verb|\citealp| (alternative cite without parentheses) to get ``author, year'' citations, which is useful for using citations within parentheses (e.g. \citealp{Gusfield:97}).
-
-A possessive citation can be made with the command \verb|\citeposs|.
-This is not a standard natbib command, so it is generally not compatible
-with other style files.
-
-\subsection{References}
-
-\nocite{Ando2005,andrew2007scalable,rasooli-tetrault-2015}
-
-The \LaTeX{} and Bib\TeX{} style files provided roughly follow the American Psychological Association format.
-If your own bib file is named \texttt{custom.bib}, then placing the following before any appendices in your \LaTeX{} file will generate the references section for you:
-\begin{quote}
-\begin{verbatim}
-\bibliography{custom}
-\end{verbatim}
-\end{quote}
-
-You can obtain the complete ACL Anthology as a Bib\TeX{} file from \url{https://aclweb.org/anthology/anthology.bib.gz}.
-To include both the Anthology and your own .bib file, use the following instead of the above.
-\begin{quote}
-\begin{verbatim}
-\bibliography{anthology,custom}
-\end{verbatim}
-\end{quote}
-
-Please see Section~\ref{sec:bibtex} for information on preparing Bib\TeX{} files.
-
-\subsection{Equations}
-
-An example equation is shown below:
 \begin{equation}
-  \label{eq:example}
-  A = \pi r^2
+  H = \frac{2FA}{F + A}.
+  \label{eq:harmonic}
 \end{equation}
 
-Labels for equation numbers, sections, subsections, figures and tables
-are all defined with the \verb|\label{label}| command and cross references
-to them are made with the \verb|\ref{label}| command.
+We optimize modules with local development metrics, then evaluate the full pipeline with $F$, $A$, and $H$. This is a sequential greedy ablation: each stage is chosen conditional on earlier stages. This is less exhaustive than a full factorial search, but it keeps training feasible under the assignment's free-Colab constraint.
 
-This an example cross-reference to Equation~\ref{eq:example}.
+\subsection{First-Stage Retrieval}
 
-\subsection{Appendices}
+The first stage uses sparse lexical retrieval. We compare TF-IDF and BM25 \citep{robertson2009probabilistic}, with three preprocessing settings: lowercasing only, lowercasing plus stopword removal, and lowercasing plus stopword removal plus Porter stemming \citep{porter1980algorithm}. We choose the first-stage configuration by development recall@500, because evidence that is absent from the top-500 pool cannot be recovered by downstream reranking.
 
-Use \verb|\appendix| before any appendix section to switch the section numbering over to letters. See Appendix~\ref{sec:appendix} for an example.
+The selected setting is BM25 with lowercasing, stopword removal, Porter stemming, $k_1=1.2$, and $b=0.5$. This retrieves 500 candidates per claim for train, development, and test splits.
 
-\section{Bib\TeX{} Files}
-\label{sec:bibtex}
+\subsection{Cross-Encoder Reranking}
 
-Unicode cannot be used in Bib\TeX{} entries, and some ways of typing special characters can disrupt Bib\TeX's alphabetization. The recommended way of typing special characters is shown in Table~\ref{tab:accents}.
+The reranker is \texttt{cross-encoder/ms-marco-MiniLM-L-12-v2}, a MiniLM model \citep{wang2020minilm} trained for MS MARCO passage ranking \citep{bajaj2016msmarco}. Unlike a bi-encoder, the cross-encoder reads the claim and evidence passage jointly and outputs a relevance logit $s(c,e)$.
 
-Please ensure that Bib\TeX{} records contain DOIs or URLs when possible, and for all the ACL materials that you reference.
-Use the \verb|doi| field for DOIs and the \verb|url| field for URLs.
-If a Bib\TeX{} entry has a URL or DOI field, the paper title in the references section will appear as a hyperlink to the paper, using the hyperref \LaTeX{} package.
+Training pairs are built from the selected BM25 top-500 pool. Gold claim-evidence pairs are positives; negatives are sampled from BM25 candidates that are not gold evidence. This produces 20,610 training pairs, with 4,122 positives and four hard negatives per positive. We train for up to three epochs and select the checkpoint with the best development evidence F-score under a quick relative-delta check. The first epoch is best; later epochs reduce development F-score, consistent with overfitting to the small pair dataset.
 
-\section*{Limitations}
+\subsection{Evidence Selection}
 
-This document does not cover the content requirements for ACL or any
-other specific venue.  Check the author instructions for
-information on
-maximum page lengths, the required ``Limitations'' section,
-and so on.
+Reranking gives an ordered list and logits, but the submission must return a small final evidence set. We compare fixed-$K$, global-threshold, and relative-delta selection. The final system uses relative-delta selection:
 
-\section*{Acknowledgments}
+\begin{equation}
+  R(c) = \{e_i: s(c,e_i) \geq \max_j s(c,e_j) - \delta\}.
+  \label{eq:relative-delta}
+\end{equation}
 
-This document has been adapted
-by Steven Bethard, Ryan Cotterell and Rui Yan
-from the instructions for earlier ACL and NAACL proceedings, including those for
-ACL 2019 by Douwe Kiela and Ivan Vuli\'{c},
-NAACL 2019 by Stephanie Lukin and Alla Roskovskaya,
-ACL 2018 by Shay Cohen, Kevin Gimpel, and Wei Lu,
-NAACL 2018 by Margaret Mitchell and Stephanie Lukin,
-Bib\TeX{} suggestions for (NA)ACL 2017/2018 from Jason Eisner,
-ACL 2017 by Dan Gildea and Min-Yen Kan,
-NAACL 2017 by Margaret Mitchell,
-ACL 2012 by Maggie Li and Michael White,
-ACL 2010 by Jing-Shin Chang and Philipp Koehn,
-ACL 2008 by Johanna D. Moore, Simone Teufel, James Allan, and Sadaoki Furui,
-ACL 2005 by Hwee Tou Ng and Kemal Oflazer,
-ACL 2002 by Eugene Charniak and Dekang Lin,
-and earlier ACL and EACL formats written by several people, including
-John Chen, Henry S. Thompson and Donald Walker.
-Additional elements were taken from the formatting instructions of the \emph{International Joint Conference on Artificial Intelligence} and the \emph{Conference on Computer Vision and Pattern Recognition}.
+This rule adapts to each claim's score scale instead of assuming that logits are calibrated across claims. The selected threshold is $\delta=1.5$, which yields 4.05 selected evidence passages per claim on average.
 
-% Bibliography entries for the entire Anthology, followed by custom entries
-%\bibliography{anthology,custom}
-% Custom bibliography entries only
+\subsection{Claim Classification}
+
+The classifier receives the claim concatenated with up to five selected evidence passages and predicts one of the four labels. During classifier training, the evidence input is the union of gold and retrieved evidence, deduplicated and truncated to five passages; at development and test time, only retrieved evidence is available. We compare \texttt{distilbert-base-uncased} \citep{sanh2019distilbert}, \texttt{cross-encoder/ms-marco-MiniLM-L-12-v2}, and \texttt{cross-encoder/nli-MiniLM2-L6-H768}. Models are trained with learning rate $10^{-5}$ for up to four epochs, batch size 16 for training and 32 for evaluation.
+
+Class imbalance is severe: \textsc{Supports} is the largest class and \textsc{Disputed} the smallest. We therefore compare no class weighting, square-root inverse-frequency weighting, and full inverse-frequency weighting. The final submitted classifier uses MiniLM-MARCO without class weighting, because stronger weighting increases minority-class pressure but sharply damages overall accuracy.
+
+\section{Experiments}
+
+\subsection{Data and Evaluation}
+
+The dataset statistics are shown in Table~\ref{tab:data-summary}. Training labels are imbalanced: 42.26\% \textsc{Supports}, 16.21\% \textsc{Refutes}, 31.43\% \textsc{NEI}, and 10.10\% \textsc{Disputed}. The average claim has 3.357 gold evidence passages, so selecting only one passage is usually insufficient.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Item} & \textbf{Count} \\
+    \midrule
+    Train claims & 1,228 \\
+    Dev claims & 154 \\
+    Test claims & 153 \\
+    Evidence passages & 1,208,827 \\
+    Mean gold evidence / claim & 3.357 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Dataset summary.}
+  \label{tab:data-summary}
+\end{table}
+
+The official evaluation script computes aggregate evidence F-score by comparing predicted evidence identifiers to gold identifiers, classification accuracy by comparing predicted labels to gold labels, and $H$ from Equation~\ref{eq:harmonic}. We report development results because test labels are unavailable locally; the notebook also generates \texttt{test-output.json} for leaderboard submission.
+
+\subsection{Experimental Setup}
+
+All reported development numbers are produced by \texttt{v13.ipynb} and summarised in \texttt{v13\_experiment\_summary.md}. We use seed 42 for the main run. Reranker and classifier checkpoints are saved under \texttt{outputs\_notebook\_v13}; candidate lists, cross-encoder scores, and final evidence sets are cached for reproducibility. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
+
+\subsection{Baselines}
+
+We use two majority-label baselines. Both predict \textsc{Supports} for every claim, matching the largest development label prior. One uses raw BM25 top-5 evidence, and the other uses the final retrieval output. This isolates whether improvements come from evidence retrieval or claim classification.
+
+\section{Results}
+
+\subsection{Retrieval and Selection}
+
+Table~\ref{tab:retrieval} summarises the first-stage retrieval comparison. BM25 consistently outperforms TF-IDF, and Porter stemming is the most important preprocessing change. The final first-stage setting reaches 0.6782 recall@500, but its direct top-5 evidence F-score is only 0.1234, motivating reranking and evidence selection.
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{3.5pt}
+  \begin{tabular}{llrr}
+    \toprule
+    \textbf{Preproc.} & \textbf{Retriever} & \textbf{R@500} & \textbf{F@5} \\
+    \midrule
+    stem & BM25 $k_1=1.2,b=0.5$ & 0.6782 & 0.1234 \\
+    stem & BM25 $k_1=1.5,b=0.5$ & 0.6758 & 0.1217 \\
+    stem & BM25 $k_1=1.2,b=0.75$ & 0.6702 & 0.1266 \\
+    stem & TF-IDF & 0.6513 & 0.0919 \\
+    stop & BM25 $k_1=1.2,b=0.5$ & 0.6502 & 0.1209 \\
+    lower & BM25 $k_1=1.2,b=0.5$ & 0.6194 & 0.1313 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Representative first-stage retrieval results. ``stem'' means lowercasing, stopword removal, and Porter stemming.}
+  \label{tab:retrieval}
+\end{table}
+
+The reranker peaks after one epoch (quick development F 0.1987), then drops to 0.1900 and 0.1784 after epochs two and three. This suggests that the cross-encoder quickly learns useful relevance signals but begins to overfit the 20,610 pair training set.
+
+Selection results in Table~\ref{tab:selection} show that relative-delta selection is better than fixed-$K$ and global thresholds. A global threshold assumes scores are calibrated across claims, but cross-encoder logits vary by claim. The relative rule instead asks how close each evidence passage is to the best passage for the same claim.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Strategy} & \textbf{Param.} & \textbf{Dev F} \\
+    \midrule
+    Relative-delta & 1.50 & 0.2448 \\
+    Relative-delta & 1.00 & 0.2329 \\
+    Relative-delta & 2.00 & 0.2321 \\
+    Fixed-$K$ & 3 & 0.2156 \\
+    Fixed-$K$ & 4 & 0.2149 \\
+    Threshold & 0.90 & 0.2079 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Evidence selection results after reranking.}
+  \label{tab:selection}
+\end{table}
+
+\subsection{Classification}
+
+Table~\ref{tab:classification} compares classifier backbones with square-root inverse-frequency weighting fixed for this stage. MiniLM-MARCO gives the highest overall accuracy, but the per-class recalls reveal a serious bias: it obtains 0.9706 recall for \textsc{Supports}, 0 for \textsc{Refutes}, and 0 for \textsc{Disputed}. The NLI-oriented MiniLM is less accurate overall but recovers some \textsc{Refutes} and \textsc{Disputed} examples, suggesting that the final classifier's accuracy is partly driven by label-prior behavior rather than robust evidence reasoning.
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lrrrr}
+    \toprule
+    \textbf{Backbone} & \textbf{A} & \textbf{Supp.} & \textbf{Ref.} & \textbf{Disp.} \\
+    \midrule
+    MiniLM-MARCO & 0.4935 & 0.9706 & 0.0000 & 0.0000 \\
+    MiniLM-NLI & 0.4805 & 0.8088 & 0.3333 & 0.1111 \\
+    DistilBERT & 0.4481 & 0.8088 & 0.0370 & 0.0000 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Classifier backbone comparison. Columns after accuracy show per-class recall for selected classes.}
+  \label{tab:classification}
+\end{table}
+
+After selecting MiniLM-MARCO, we compare class weighting in Table~\ref{tab:weighting}. Full inverse-frequency weighting raises \textsc{Disputed} recall to 0.8889 but collapses accuracy to 0.2468. Square-root weighting gives the best $H$ by a narrow margin, but predicts no \textsc{Disputed} claims correctly. We choose no weighting for the final system because it preserves some \textsc{Disputed} recall while avoiding the large accuracy collapse.
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrrr}
+    \toprule
+    \textbf{Weighting} & \textbf{A} & \textbf{H} & \textbf{Ref.} & \textbf{Disp.} \\
+    \midrule
+    None & 0.4805 & 0.3243 & 0.0000 & 0.2778 \\
+    Sqrt inv. freq. & 0.4870 & 0.3258 & 0.0000 & 0.0000 \\
+    Inv. freq. & 0.2468 & 0.2458 & 0.0741 & 0.8889 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Class weighting ablation for the MiniLM-MARCO classifier.}
+  \label{tab:weighting}
+\end{table}
+
+\subsection{Final Development Results}
+
+Table~\ref{tab:main-results} compares the final system to majority-label baselines. The final retrieval output doubles evidence F-score over BM25 top-5 evidence, improving $H$ from 0.1929 to 0.3150 even when the label is always \textsc{Supports}. The classifier then raises accuracy from 0.4416 to 0.4805, giving final $H=0.3243$. Thus most of the measured improvement comes from retrieval, while classification contributes a smaller but real gain.
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabular}{lrrr}
+    \toprule
+    \textbf{System} & \textbf{F} & \textbf{A} & \textbf{H} \\
+    \midrule
+    All \textsc{Supports} + BM25 top-5 & 0.1234 & 0.4416 & 0.1929 \\
+    All \textsc{Supports} + final retrieval & 0.2448 & 0.4416 & 0.3150 \\
+    Final system & 0.2448 & 0.4805 & 0.3243 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Main development-set results.}
+  \label{tab:main-results}
+\end{table}
+
+The confusion matrix in Table~\ref{tab:confusion} makes the classifier limitation clear. The system predicts \textsc{Supports} for most claims and never predicts \textsc{Refutes} correctly. This is the main reason accuracy remains close to the majority baseline despite better evidence retrieval.
+
+\begin{table}[t]
+  \centering
+  \small
+  \setlength{\tabcolsep}{3pt}
+  \begin{tabular}{lrrrr}
+    \toprule
+    \textbf{Gold} & \textbf{Sup.} & \textbf{Ref.} & \textbf{NEI} & \textbf{Disp.} \\
+    \midrule
+    \textsc{Supports} & 65 & 0 & 2 & 1 \\
+    \textsc{Refutes} & 24 & 0 & 3 & 0 \\
+    \textsc{NEI} & 37 & 0 & 4 & 0 \\
+    \textsc{Disputed} & 13 & 0 & 0 & 5 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Final classifier confusion matrix on the development set. Rows are gold labels and columns are predictions.}
+  \label{tab:confusion}
+\end{table}
+
+\subsection{Error Analysis}
+
+Seed variance confirms that the classifier result should not be overinterpreted. With the same retrieval fixed and seeds 42, 123, and 2024, mean accuracy is $0.4892 \pm 0.0201$ and mean $H$ is $0.3262 \pm 0.0046$. Retrieval F-score is unchanged because evidence selection is fixed.
+
+We also run an oracle diagnostic by replacing retrieved development evidence with gold evidence. This raises evidence F-score to 1.0 and therefore $H$ to 0.5806, but label accuracy falls from 0.4805 to 0.4091. The drop implies that the classifier is not simply waiting for cleaner evidence; it is sensitive to the evidence distribution seen at training and may rely on label priors or noisy retrieval patterns.
+
+Finally, we bucket errors by whether retrieval hits at least one gold evidence passage and whether the label is correct. Only 27.9\% of claims are both retrieval-hit and label-correct. Another 24.7\% have a retrieval hit but wrong label, while 27.3\% fail both retrieval and classification. This split shows that future improvements must target both candidate recall and evidence-conditioned reasoning.
+
+\section{Conclusion}
+
+Our final system is a compact, reproducible retrieval-then-classification pipeline for climate claim verification. The strongest component is retrieval: BM25 tuning, cross-encoder reranking, and relative-delta evidence selection substantially improve evidence F-score over raw BM25 top-5. The main limitation is classification. The MiniLM-MARCO classifier slightly improves over the majority-label baseline, but its strong \textsc{Supports} bias and zero \textsc{Refutes} recall show that it has not learned robust stance reasoning.
+
+The most promising future directions are therefore targeted rather than architectural: iterative hard-negative mining for the reranker, per-evidence NLI scoring followed by learned aggregation, and training objectives that improve minority-class recall without collapsing overall accuracy. A fuller hyperparameter search could also expose interactions missed by the sequential greedy ablation, but the current design keeps the submitted notebook feasible under the compute constraints.
+
+\section*{Team Contributions}
+
+\begin{itemize}
+  \item Kexing Ma (1697372): contributed to retrieval experiments, reranker development, evaluation, and report writing.
+  \item Mengfan Gao (1660072): contributed to classifier experiments, ablation analysis, error analysis, and report writing.
+  \item Jingwang Liu (1442608): contributed to data processing, baseline comparisons, reproducibility checks, and report editing.
+\end{itemize}
+
 \bibliography{custom}
-
-\appendix
-
-\section{Example Appendix}
-\label{sec:appendix}
-
-This is an appendix.
 
 \end{document}
