@@ -53,9 +53,9 @@ The selected setting is BM25 with lowercasing, stopword removal, Porter stemming
 
 \subsection{Cross-Encoder Reranking}
 
-The reranker is \texttt{cross-encoder/ms-marco-MiniLM-L-12-v2}, a MiniLM model \citep{wang2020minilm} trained for MS MARCO passage ranking \citep{bajaj2016msmarco}. Unlike a bi-encoder, the cross-encoder reads the claim and evidence passage jointly and outputs a relevance logit $s(c,e)$.
+The reranker is cross-encoder/ms-marco-MiniLM-L-12-v2, a MiniLM model \citep{wang2020minilm} trained for MS MARCO passage ranking \citep{bajaj2016msmarco}. Unlike a bi-encoder, the cross-encoder reads the claim and evidence passage jointly and outputs a relevance logit $s(c,e)$.
 
-Training pairs are built from the selected BM25 top-500 pool. Gold claim-evidence pairs are positives; negatives are sampled from BM25 candidates that are not gold evidence. This produces 20,610 training pairs, with 4,122 positives and four hard negatives per positive. We train for up to three epochs and select the checkpoint with the best development evidence F-score under a quick relative-delta check. The first epoch is best; later epochs reduce development F-score, consistent with overfitting to the small pair dataset.
+Training pairs are built from the selected BM25 top-500 pool. Gold claim-evidence pairs are positives; negatives are sampled from BM25 candidates that are not gold evidence. This produces 20,610 training pairs, with 4,122 positives and four hard negatives per positive. We train for up to three epochs and select the checkpoint with the best development evidence F-score under a quick relative-delta check. The first epoch is best; later epochs reduce development F-score, consistent with overfitting to the small pair dataset. Per-epoch numbers are reported in Section~\ref{sec:retrieval-results}.
 
 \subsection{Evidence Selection}
 
@@ -70,7 +70,7 @@ This rule adapts to each claim's score scale instead of assuming that logits are
 
 \subsection{Claim Classification}
 
-The classifier receives the claim concatenated with up to five selected evidence passages and predicts one of the four labels. During classifier training, the evidence input is the union of gold and retrieved evidence, deduplicated and truncated to five passages; at development and test time, only retrieved evidence is available. We compare \texttt{distilbert-base-uncased} \citep{sanh2019distilbert}, \texttt{cross-encoder/ms-marco-MiniLM-L-12-v2}, and \texttt{cross-encoder/nli-MiniLM2-L6-H768}. Models are trained with learning rate $10^{-5}$ for up to four epochs, batch size 16 for training and 32 for evaluation.
+The classifier receives the claim concatenated with up to five selected evidence passages and predicts one of the four labels. During classifier training, the evidence input is the union of gold and retrieved evidence, deduplicated and truncated to five passages; at development and test time, only retrieved evidence is available. We compare distilbert-base-uncased \citep{sanh2019distilbert}, cross-encoder/ms-marco-MiniLM-L-12-v2, and cross-encoder/nli-MiniLM2-L6-H768. Models are trained with learning rate $10^{-5}$ for up to four epochs, batch size 16 for training and 32 for evaluation.
 
 Class imbalance is severe: \textsc{Supports} is the largest class and \textsc{Disputed} the smallest. We therefore compare no class weighting, square-root inverse-frequency weighting, and full inverse-frequency weighting. The final submitted classifier uses MiniLM-MARCO without class weighting, because stronger weighting increases minority-class pressure but sharply damages overall accuracy.
 
@@ -98,11 +98,11 @@ The dataset statistics are shown in Table~\ref{tab:data-summary}. Training label
   \label{tab:data-summary}
 \end{table}
 
-The official evaluation script computes aggregate evidence F-score by comparing predicted evidence identifiers to gold identifiers, classification accuracy by comparing predicted labels to gold labels, and $H$ from Equation~\ref{eq:harmonic}. We report development results because test labels are unavailable locally; the notebook also generates \texttt{test-output.json} for leaderboard submission.
+The official evaluation script computes aggregate evidence F-score by comparing predicted evidence identifiers to gold identifiers, classification accuracy by comparing predicted labels to gold labels, and $H$ from Equation~\ref{eq:harmonic}. We report development results because test labels are unavailable locally; the notebook also generates test-output.json for leaderboard submission.
 
 \subsection{Experimental Setup}
 
-All reported development numbers are produced by \texttt{v13.ipynb} and summarised in \texttt{v13\_experiment\_summary.md}. We use seed 42 for the main run. Reranker and classifier checkpoints are saved under \texttt{outputs\_notebook\_v13}; candidate lists, cross-encoder scores, and final evidence sets are cached for reproducibility. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
+All reported development numbers are produced by v13.ipynb and summarised in v13\_experiment\_summary.md. We use seed 42 for the main run. Reranker and classifier checkpoints are saved under outputs\_notebook\_v13; candidate lists, cross-encoder scores, and final evidence sets are cached for reproducibility. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
 
 \subsection{Baselines}
 
@@ -111,6 +111,7 @@ We use two majority-label baselines. Both predict \textsc{Supports} for every cl
 \section{Results}
 
 \subsection{Retrieval and Selection}
+\label{sec:retrieval-results}
 
 Table~\ref{tab:retrieval} summarises the first-stage retrieval comparison. BM25 consistently outperforms TF-IDF, and Porter stemming is the most important preprocessing change. The final first-stage setting reaches 0.6782 recall@500, but its direct top-5 evidence F-score is only 0.1234, motivating reranking and evidence selection.
 
@@ -134,7 +135,7 @@ Table~\ref{tab:retrieval} summarises the first-stage retrieval comparison. BM25 
   \label{tab:retrieval}
 \end{table}
 
-The reranker peaks after one epoch (quick development F 0.1987), then drops to 0.1900 and 0.1784 after epochs two and three. This suggests that the cross-encoder quickly learns useful relevance signals but begins to overfit the 20,610 pair training set.
+The reranker peaks after one epoch: training loss decreases from 0.3809 to 0.2632 and 0.2291 over three epochs, but quick development F drops from 0.1961 to 0.1911 and 0.1806. This suggests that the cross-encoder quickly learns useful relevance signals but begins to overfit the 20,610 pair training set.
 
 Selection results in Table~\ref{tab:selection} show that relative-delta selection is better than fixed-$K$ and global thresholds. A global threshold assumes scores are calibrated across claims, but cross-encoder logits vary by claim. The relative rule instead asks how close each evidence passage is to the best passage for the same claim.
 
@@ -242,9 +243,26 @@ The confusion matrix in Table~\ref{tab:confusion} makes the classifier limitatio
 
 Seed variance confirms that the classifier result should not be overinterpreted. With the same retrieval fixed and seeds 42, 123, and 2024, mean accuracy is $0.4892 \pm 0.0201$ and mean $H$ is $0.3262 \pm 0.0046$. Retrieval F-score is unchanged because evidence selection is fixed.
 
+Because \textsc{Disputed} claims often require detecting conflict between evidence passages, we also tried a lightweight Qwen2.5-3B-Instruct cascade. For claims currently predicted as \textsc{Supports} or \textsc{Refutes} with at least two retrieved passages, the model was prompted to answer whether the passages contradicted each other; a positive answer would change the label to \textsc{Disputed}. As Table~\ref{tab:llm-cascade} shows, the cascade made no label changes on the 130 eligible development claims, so it did not improve the final metrics. This negative result suggests that a zero-shot contradiction prompt is not enough; a useful conflict module would likely need stronger evidence-level NLI supervision or calibration.
+
+\begin{table}[t]
+  \centering
+  \small
+  \begin{tabular}{lrrr}
+    \toprule
+    \textbf{Setting} & \textbf{F} & \textbf{A} & \textbf{H} \\
+    \midrule
+    Final system & 0.2448 & 0.4805 & 0.3243 \\
+    LLM cascade & 0.2448 & 0.4805 & 0.3243 \\
+    \bottomrule
+  \end{tabular}
+  \caption{Qwen2.5-3B-Instruct \textsc{Disputed} cascade on 130 eligible development claims. The cascade flipped zero labels.}
+  \label{tab:llm-cascade}
+\end{table}
+
 We also run an oracle diagnostic by replacing retrieved development evidence with gold evidence. This raises evidence F-score to 1.0 and therefore $H$ to 0.5806, but label accuracy falls from 0.4805 to 0.4091. The drop implies that the classifier is not simply waiting for cleaner evidence; it is sensitive to the evidence distribution seen at training and may rely on label priors or noisy retrieval patterns.
 
-Finally, we bucket errors by whether retrieval hits at least one gold evidence passage and whether the label is correct. Only 27.9\% of claims are both retrieval-hit and label-correct. Another 24.7\% have a retrieval hit but wrong label, while 27.3\% fail both retrieval and classification. This split shows that future improvements must target both candidate recall and evidence-conditioned reasoning.
+Finally, we bucket errors by whether retrieval hits at least one gold evidence passage and whether the label is correct. Only 27.9\% of claims are both retrieval-hit and label-correct. Another 24.7\% have a retrieval hit but a wrong label, 27.3\% fail both retrieval and classification, and the remaining 20.1\% are ``lucky'' cases where the label is correct without any gold evidence in the retrieved set, most likely from label-prior or claim-text shortcuts. This split shows that future improvements must target both candidate recall and evidence-conditioned reasoning.
 
 \section{Conclusion}
 
@@ -255,9 +273,9 @@ The most promising future directions are therefore targeted rather than architec
 \section*{Team Contributions}
 
 \begin{itemize}
-  \item Kexing Ma (1697372): contributed to retrieval experiments, reranker development, evaluation, and report writing.
   \item Mengfan Gao (1660072): contributed to classifier experiments, ablation analysis, error analysis, and report writing.
   \item Jingwang Liu (1442608): contributed to data processing, baseline comparisons, reproducibility checks, and report editing.
+  \item Kexing Ma (1697372): contributed to retrieval experiments, reranker development, evaluation, and report writing.
 \end{itemize}
 
 \bibliography{custom}

@@ -220,11 +220,11 @@ pair 构造解释：
 
 训练结果：
 
-| Epoch | dev F under quick relative-delta check |    Time s |
-| ----: | -------------------------------------: | --------: |
-|     1 |                                 0.1987 | about 121 |
-|     2 |                                 0.1900 | about 120 |
-|     3 |                                 0.1784 | about 120 |
+| Epoch | Train loss | dev F under quick relative-delta check | Time s |
+| ----: | ---------: | -------------------------------------: | -----: |
+|     1 |     0.3809 |                                 0.1961 |  129.4 |
+|     2 |     0.2632 |                                 0.1911 |  129.3 |
+|     3 |     0.2291 |                                 0.1806 |  129.8 |
 
 选择：
 
@@ -235,7 +235,7 @@ Best reranker epoch = 1
 结论：
 
 - 第 1 个 epoch 最好。
-- 第 2、3 个 epoch 的 dev F 下降，说明 reranker 可能开始过拟合训练 pairs。
+- Train loss 持续下降，但第 2、3 个 epoch 的 dev F 下降，说明 reranker 可能开始过拟合训练 pairs。
 
 这里的 epoch 指完整看一遍训练数据。训练越久不一定越好；如果模型开始记住训练集模式，dev set 表现可能下降。
 
