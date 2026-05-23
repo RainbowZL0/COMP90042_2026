@@ -24,29 +24,34 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.5}Claim Classification}{2}{subsection.2.5}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {3}Experiments}{2}{section.3}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Data and Evaluation}{2}{subsection.3.1}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Representative first-stage retrieval results. ``stem'' means lowercasing, stopword removal, and Porter stemming.}}{3}{table.caption.2}\protected@file@percent }
-\newlabel{tab:retrieval}{{2}{3}{Representative first-stage retrieval results. ``stem'' means lowercasing, stopword removal, and Porter stemming}{table.caption.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Experimental Setup}{3}{subsection.3.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Baselines}{3}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Training, Search, and Class Balance}{3}{subsection.3.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4}Baselines}{3}{subsection.3.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Hyperparameter search and checkpoint selection used in the experiments.}}{3}{table.caption.2}\protected@file@percent }
+\newlabel{tab:search-space}{{2}{3}{Hyperparameter search and checkpoint selection used in the experiments}{table.caption.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces BM25s coarse-ranking diagnostic on the development set with different candidate-pool sizes.}}{3}{table.caption.3}\protected@file@percent }
+\newlabel{tab:bm25s-topk}{{3}{3}{BM25s coarse-ranking diagnostic on the development set with different candidate-pool sizes}{table.caption.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Results}{3}{section.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}Retrieval and Selection}{3}{subsection.4.1}\protected@file@percent }
-\newlabel{sec:retrieval-results}{{4.1}{3}{Retrieval and Selection}{subsection.4.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Evidence selection results after reranking.}}{3}{table.caption.3}\protected@file@percent }
-\newlabel{tab:selection}{{3}{3}{Evidence selection results after reranking}{table.caption.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Classifier backbone comparison. Columns after accuracy show per-class recall for selected classes.}}{3}{table.caption.4}\protected@file@percent }
-\newlabel{tab:classification}{{4}{3}{Classifier backbone comparison. Columns after accuracy show per-class recall for selected classes}{table.caption.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Classification}{3}{subsection.4.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Final Development Results}{3}{subsection.4.3}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Class weighting ablation for the MiniLM-MARCO classifier.}}{4}{table.caption.5}\protected@file@percent }
-\newlabel{tab:weighting}{{5}{4}{Class weighting ablation for the MiniLM-MARCO classifier}{table.caption.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Main development-set results.}}{4}{table.caption.6}\protected@file@percent }
-\newlabel{tab:main-results}{{6}{4}{Main development-set results}{table.caption.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Error Analysis}{4}{subsection.4.4}\protected@file@percent }
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Final classifier confusion matrix on the development set. Rows are gold labels and columns are predictions.}}{4}{table.caption.7}\protected@file@percent }
-\newlabel{tab:confusion}{{7}{4}{Final classifier confusion matrix on the development set. Rows are gold labels and columns are predictions}{table.caption.7}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Qwen2.5-3B-Instruct \textsc  {Disputed} cascade on 130 eligible development claims. The cascade flipped zero labels.}}{4}{table.caption.8}\protected@file@percent }
-\newlabel{tab:llm-cascade}{{8}{4}{Qwen2.5-3B-Instruct \textsc {Disputed} cascade on 130 eligible development claims. The cascade flipped zero labels}{table.caption.8}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{4}{section.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1}BM25s Candidate Pool Size}{3}{subsection.4.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}Sparse Retrieval and Preprocessing Analysis}{3}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:sparse-retrieval-analysis}{{4.2}{3}{Sparse Retrieval and Preprocessing Analysis}{subsection.4.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Retrieval Performance Across Different Preprocessing and Parameter Configurations}}{4}{table.caption.4}\protected@file@percent }
+\newlabel{tab:results}{{4}{4}{Retrieval Performance Across Different Preprocessing and Parameter Configurations}{table.caption.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Retrieval and Selection}{4}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:retrieval-results}{{4.3}{4}{Retrieval and Selection}{subsection.4.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces Representative first-stage retrieval results. ``stem'' means lowercasing, stopword removal, and Porter stemming.}}{4}{table.caption.5}\protected@file@percent }
+\newlabel{tab:retrieval}{{5}{4}{Representative first-stage retrieval results. ``stem'' means lowercasing, stopword removal, and Porter stemming}{table.caption.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.4}Classification}{4}{subsection.4.4}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Evidence selection results after reranking.}}{5}{table.caption.6}\protected@file@percent }
+\newlabel{tab:selection}{{6}{5}{Evidence selection results after reranking}{table.caption.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces Classifier backbone comparison. Columns after accuracy show per-class recall for selected classes.}}{5}{table.caption.7}\protected@file@percent }
+\newlabel{tab:classification}{{7}{5}{Classifier backbone comparison. Columns after accuracy show per-class recall for selected classes}{table.caption.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.5}Final Development Results}{5}{subsection.4.5}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Class weighting ablation for the MiniLM-MARCO classifier.}}{5}{table.caption.8}\protected@file@percent }
+\newlabel{tab:weighting}{{8}{5}{Class weighting ablation for the MiniLM-MARCO classifier}{table.caption.8}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Main development-set results.}}{5}{table.caption.9}\protected@file@percent }
+\newlabel{tab:main-results}{{9}{5}{Main development-set results}{table.caption.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6}Error Analysis}{5}{subsection.4.6}\protected@file@percent }
 \bibdata{custom}
 \bibcite{bajaj2016msmarco}{{1}{2016}{{Bajaj et~al.}}{{Bajaj, Campos, Craswell, Deng, Gao, Liu, Majumder, McNamara, Mitra, Nguyen, Rosenberg, Song, Stoica, Tiwary, and Wang}}}
 \bibcite{diggelmann2020climatefever}{{2}{2020}{{Diggelmann et~al.}}{{Diggelmann, Boyd-Graber, Bulian, Ciaramita, and Leippold}}}
@@ -55,4 +60,9 @@
 \bibcite{sanh2019distilbert}{{5}{2019}{{Sanh et~al.}}{{Sanh, Debut, Chaumond, and Wolf}}}
 \bibcite{thorne2018fever}{{6}{2018}{{Thorne et~al.}}{{Thorne, Vlachos, Christodoulopoulos, and Mittal}}}
 \bibcite{wang2020minilm}{{7}{2020}{{Wang et~al.}}{{Wang, Wei, Dong, Bao, Yang, and Zhou}}}
-\gdef \@abspage@last{5}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces Final classifier confusion matrix on the development set. Rows are gold labels and columns are predictions.}}{6}{table.caption.10}\protected@file@percent }
+\newlabel{tab:confusion}{{10}{6}{Final classifier confusion matrix on the development set. Rows are gold labels and columns are predictions}{table.caption.10}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces Qwen2.5-3B-Instruct \textsc  {Disputed} cascade on 130 eligible development claims. The cascade flipped zero labels.}}{6}{table.caption.11}\protected@file@percent }
+\newlabel{tab:llm-cascade}{{11}{6}{Qwen2.5-3B-Instruct \textsc {Disputed} cascade on 130 eligible development claims. The cascade flipped zero labels}{table.caption.11}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Conclusion}{6}{section.5}\protected@file@percent }
+\gdef \@abspage@last{6}
