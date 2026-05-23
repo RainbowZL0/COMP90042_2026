@@ -27,7 +27,7 @@
 \maketitle
 
 \begin{abstract}
-We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, and a relative-delta rule selects a variable number of final evidence passages to avoid relying on cross-claim logit calibration. A second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval to estimate candidate-pool coverage, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward\cite{rafailov2023direct} \textsc{Supports} and zero recall for \textsc{Refutes}.
+We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, and a relative-delta rule selects a variable number of final evidence passages to avoid relying on cross-claim logit calibration. A second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval to estimate candidate-pool coverage, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward \textsc{Supports} and zero recall for \textsc{Refutes}.
 \end{abstract}
 
 \section{Introduction}
@@ -183,11 +183,11 @@ This motivates our later class-weighting experiment.
 
 \FloatBarrier
 
-The official evaluation script computes aggregate evidence F-score by comparing predicted evidence identifiers to gold identifiers, classification accuracy by comparing predicted labels to gold labels, and $H$ from Equation~\ref{eq:harmonic}. We report development results because test labels are unavailable locally; the notebook also generates test-output.json for leaderboard submission.
+The official evaluation computes aggregate evidence F-score by comparing predicted evidence identifiers to gold identifiers, classification accuracy by comparing predicted labels to gold labels, and $H$ from Equation~\ref{eq:harmonic}. We report development results because test labels are unavailable locally; the implementation also generates predictions for leaderboard submission.
 
 \subsection{Experimental Setup}
 
-All reported development numbers are produced by the submitted notebook, Group56.ipynb. We use seed 42 for the main run. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
+All reported development numbers are produced by the submitted implementation. We use seed 42 for the main run. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
 
 
 \subsection{Training, Search, and Class Balance}
@@ -441,7 +441,7 @@ Finally, we bucket errors by whether retrieval hits at least one gold evidence p
 
 Our final system is a compact, reproducible retrieval-then-classification pipeline for climate claim verification. The strongest component is retrieval: BM25 tuning, cross-encoder reranking, and relative-delta evidence selection substantially improve evidence F-score over raw BM25 top-5. The main limitation is classification. The MiniLM-MARCO classifier slightly improves over the majority-label baseline, but its strong \textsc{Supports} bias and zero \textsc{Refutes} recall show that it has not learned robust stance reasoning.
 
-The most promising future directions are therefore targeted rather than architectural: iterative hard-negative mining for the reranker, per-evidence NLI scoring followed by learned aggregation, and training objectives that improve minority-class recall without collapsing overall accuracy. A fuller hyperparameter search could also expose interactions missed by the sequential greedy ablation, but the current design keeps the submitted notebook feasible under the compute constraints.
+The most promising future directions are therefore targeted rather than architectural: iterative hard-negative mining for the reranker, per-evidence NLI scoring followed by learned aggregation, and training objectives that improve minority-class recall without collapsing overall accuracy. A fuller hyperparameter search could also expose interactions missed by the sequential greedy ablation, but the current design keeps the implementation feasible under the compute constraints.
 
 \section*{Team Contributions}
 

@@ -1,21 +1,12 @@
-# Running Group56.ipynb
-
-This README describes how to run the final notebook `Group56.ipynb`.
+# Running the Submitted Code
 
 ## Data
 
-Place the course data files in the project root under `data/`:
-
-```text
-data/train-claims.json
-data/dev-claims.json
-data/test-claims-unlabelled.json
-data/evidence.json
-```
+Use the official assignment data in the same project layout expected by the released starter code. The submitted code assumes the training, development, test, and evidence data are available before execution.
 
 ## Environment
 
-The notebook was tested with Python 3.12. The main package versions in the working environment were:
+The code was tested with Python 3.12. The main package versions in the working environment were:
 
 ```text
 accelerate==1.13.0
@@ -41,30 +32,15 @@ If starting from a clean Python environment, install the required packages with 
 pip install accelerate==1.13.0 bm25s==0.3.9 ipykernel==7.2.0 jupytext==1.19.3 mlflow==3.12.0 nltk==3.9.4 numpy==2.4.5 pandas==2.3.3 scikit-learn==1.8.0 scipy==1.17.1 sentence-transformers==5.5.0 sentencepiece==0.2.1 tqdm==4.67.3 transformers==5.8.1
 ```
 
-Install a PyTorch build appropriate for the machine.
+Install a PyTorch build appropriate for the machine. A CUDA-enabled build was used locally, while the default Colab PyTorch installation should also work.
 
-## Outputs
+## Running
 
-The notebook writes development and test predictions under:
+Open the submitted code in Colab, VS Code, or Jupyter, then run all cells from top to bottom. The code creates its working outputs automatically and prints the development evaluation results during execution.
 
-```text
-outputs_Group56/
-```
+## Expected Development Scores
 
-The main files are:
-
-```text
-outputs_Group56/dev-predictions.json
-outputs_Group56/test-output.json
-```
-
-Evaluate the development predictions with:
-
-```bash
-python eval.py --predictions outputs_Group56/dev-predictions.json --groundtruth data/dev-claims.json
-```
-
-Expected development scores are approximately:
+The final reported development scores are approximately:
 
 ```text
 Evidence F-score: 0.2448
