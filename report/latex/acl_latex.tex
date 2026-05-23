@@ -12,6 +12,8 @@
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, calc}
 
 \title{Fact-Checking Climate Claims with Sparse Retrieval and Cross-Encoder Reranking}
 
@@ -34,9 +36,75 @@ We find that the retrieval side is effective but still far from solved. Stemming
 
 \section{Approach}
 
+\begin{figure*}[t]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  >={Latex[length=2mm,width=1.6mm]},
+  proc/.style={rectangle, rounded corners=3pt, draw=black!75, line width=0.55pt,
+               minimum height=0.95cm, minimum width=2.1cm, align=center,
+               fill=blue!7, inner sep=2pt},
+  cls/.style={rectangle, rounded corners=3pt, draw=black!75, line width=0.55pt,
+              minimum height=0.95cm, minimum width=2.6cm, align=center,
+              fill=orange!13, inner sep=2pt},
+  io/.style={rectangle, draw=black!65, line width=0.5pt, densely dashed,
+             minimum height=0.95cm, minimum width=1.9cm, align=center,
+             fill=gray!5, inner sep=2pt},
+  store/.style={cylinder, shape border rotate=90, aspect=0.18, draw=black!65,
+                line width=0.5pt, minimum height=1.0cm, minimum width=2.5cm,
+                align=center, fill=gray!10},
+  note/.style={font=\scriptsize\itshape, text=black!60, align=center, inner sep=1pt},
+  band/.style={font=\footnotesize\bfseries, text=black!70},
+  arr/.style={->, line width=0.6pt, draw=black!80},
+]
+
+% --- Retrieval row (y = 0) ---
+\node[io]    (claim)  at (0.5,  0)    {Claim $c$};
+\node[proc]  (norm)   at (3.3,  0)    {Text\\Normalize};
+\node[proc]  (bm25)   at (6.1,  0)    {BM25\\Retrieval};
+\node[proc]  (rerank) at (8.9,  0)    {Cross-Encoder\\Reranker};
+\node[proc]  (sel)    at (11.7, 0)    {Relative-$\delta$\\Selector};
+\node[io]    (ev)     at (14.5, 0)    {Evidence\\Set $E$};
+
+\node[store] (corpus) at (6.1,  1.75) {Evidence Corpus\\\scriptsize 1{,}208{,}827 passages};
+
+\draw[arr] (claim)  -- (norm);
+\draw[arr] (norm)   -- (bm25);
+\draw[arr] (bm25)   -- (rerank);
+\draw[arr] (rerank) -- (sel);
+\draw[arr] (sel)    -- (ev);
+\draw[arr] (corpus) -- (bm25);
+
+\node[note] at (3.3,  -0.85) {lowercase + stopwords\\+ Porter stem};
+\node[note] at (6.1,  -0.85) {$k_1{=}1.2$, $b{=}0.5$\\top-500 candidates};
+\node[note] at (8.9,  -0.85) {ms-marco-MiniLM-L-12-v2\\gold vs.\ BM25-sampled negs};
+\node[note] at (11.7, -0.85) {$\delta{=}1.5$, $\approx$\,4.05\\passages per claim};
+
+% --- Classification row (y = -3.9) ---
+\node[cls] (clsbox) at (8.9,  -3.9) {Cross-Encoder\\Classifier};
+\node[io]  (label)  at (13.5, -3.9) {Label $\hat{y}$};
+
+\draw[arr] (claim.south) -- ++(0,-3.425) -| (clsbox.west);
+\draw[arr] (ev.south)    -- ++(0,-2.05)  -| (clsbox.north);
+\draw[arr] (clsbox) -- (label);
+
+\node[note] at (8.9,  -4.75) {ms-marco-MiniLM-L-12-v2\\no class weighting};
+\node[note] at (13.5, -4.75) {SUPPORTS / REFUTES /\\NEI / DISPUTED};
+
+% Band labels on the left (placed slightly off the row y to avoid sharing the arrow line)
+\node[band, anchor=east] at (-0.2,  0.0)  {(a) Retrieval};
+\node[band, anchor=east] at (-0.2, -3.9)  {(b) Classification};
+
+\end{tikzpicture}%
+}
+\caption{Architecture of the final v13 fact-checking system. \textbf{(a) Retrieval}: BM25 over a Porter-stemmed index retrieves a top-500 candidate pool from the 1.2M-passage corpus for the normalized claim; a MiniLM cross-encoder reranks the candidates and a per-claim relative-$\delta$ rule selects the final evidence set ($\approx$4.05 passages on average). \textbf{(b) Classification}: a second MiniLM cross-encoder reads the claim together with its selected evidence and predicts one of four labels. Dashed boxes denote inputs and outputs; the reranker and classifier are trained independently.}
+\label{fig:architecture}
+\end{figure*}
+
 \subsection{Task Formulation}
 
-For each claim $c$, the system ranks evidence passages $e \in E$ and returns a selected evidence set $R(c)$ plus a label $\hat{y} \in Y$, where $Y=\{\textsc{Supports},\textsc{Refutes},\textsc{NEI},\textsc{Disputed}\}$. The official score reports evidence retrieval F-score $F$, label accuracy $A$, and their harmonic mean:
+Figure~\ref{fig:architecture} summarizes the overall pipeline. For each claim $c$, the system ranks evidence passages $e \in E$ and returns a selected evidence set $R(c)$ plus a label $\hat{y} \in Y$, where $Y=\{\textsc{Supports},\textsc{Refutes},\textsc{NEI},\textsc{Disputed}\}$. The official score reports evidence retrieval F-score $F$, label accuracy $A$, and their harmonic mean:
 
 \begin{equation}
   H = \frac{2FA}{F + A}.
