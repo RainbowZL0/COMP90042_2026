@@ -28,12 +28,9 @@ If starting from a clean Python environment, install the required packages with 
 pip install accelerate==1.13.0 bm25s==0.3.9 ipykernel==7.2.0 jupytext==1.19.3 mlflow==3.12.0 nltk==3.9.4 numpy==2.4.5 pandas==2.3.3 scikit-learn==1.8.0 scipy==1.17.1 sentence-transformers==5.5.0 sentencepiece==0.2.1 tqdm==4.67.3 transformers==5.8.1
 ```
 
-Install a PyTorch build appropriate for the machine. A CUDA-enabled build was used locally, while the default Colab PyTorch installation should also work.
-
 ## Running
 
-Run all jupyter cells from top to bottom. The code creates its working outputs automatically and prints the development 
-evaluation results during execution.
+Run all jupyter cells from top to bottom. The code creates its working outputs automatically and prints the development evaluation results during execution.
 
 ## Expected Development Scores
 
