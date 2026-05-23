@@ -23,7 +23,7 @@
 \maketitle
 
 \begin{abstract}
-We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, a relative-delta rule selects a variable number of final evidence passages, addressing the issue that cross-encoder logits are typically uncalibrated across different claims. A second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval to define the theoretical performance upper bound, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward \textsc{Supports} and zero recall for \textsc{Refutes}.
+We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, and a relative-delta rule selects a variable number of final evidence passages to avoid relying on cross-claim logit calibration. A second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval to estimate candidate-pool coverage, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward \textsc{Supports} and zero recall for \textsc{Refutes}.
 \end{abstract}
 
 \section{Introduction}
@@ -98,7 +98,7 @@ We find that the retrieval side is effective but still far from solved. Stemming
 
 \end{tikzpicture}%
 }
-\caption{Architecture of the final v13 fact-checking system. \textbf{(a) Retrieval}: BM25 over a Porter-stemmed index retrieves a top-500 candidate pool from the 1.2M-passage corpus for the normalized claim; a MiniLM cross-encoder reranks the candidates and a per-claim relative-$\delta$ rule selects the final evidence set ($\approx$4.05 passages on average). \textbf{(b) Classification}: a second MiniLM cross-encoder reads the claim together with its selected evidence and predicts one of four labels. Dashed boxes denote inputs and outputs; the reranker and classifier are trained independently.}
+\caption{Architecture of the final fact-checking system. \textbf{(a) Retrieval}: BM25 over a Porter-stemmed index retrieves a top-500 candidate pool from the 1.2M-passage corpus for the normalized claim; a MiniLM cross-encoder reranks the candidates and a per-claim relative-$\delta$ rule selects the final evidence set ($\approx$4.05 passages on average). \textbf{(b) Classification}: a second MiniLM cross-encoder reads the claim together with its selected evidence and predicts one of four labels. Dashed boxes denote inputs and outputs; the reranker and classifier are trained independently.}
 \label{fig:architecture}
 \end{figure*}
 
@@ -115,7 +115,7 @@ We optimize modules with local development metrics, then evaluate the full pipel
 
 \subsection{First-Stage Retrieval}
 
-The first stage uses sparse lexical retrieval. We compare TF-IDF and BM25 \citep{robertson2009probabilistic}, with three preprocessing settings: lowercasing only, lowercasing plus stopword removal, and lowercasing plus stopword removal plus Porter stemming \citep{porter1980algorithm}. We choose the first-stage configuration by development recall@500, because evidence that is absent from the top-500 pool cannot be recovered by downstream reranking.
+The first stage uses sparse lexical retrieval. We compare TF-IDF and the BM25 ranking function \citep{robertson2009probabilistic}, implemented with the Python \texttt{bm25s} library, with three preprocessing settings: lowercasing only, lowercasing plus stopword removal, and lowercasing plus stopword removal plus Porter stemming \citep{porter1980algorithm}. We choose the first-stage configuration by development recall@500, because evidence that is absent from the top-500 pool cannot be recovered by downstream reranking.
 
 The selected setting is BM25 with lowercasing, stopword removal, Porter stemming, $k_1=1.2$, and $b=0.5$. This retrieves 500 candidates per claim for train, development, and test splits.
 
@@ -170,14 +170,16 @@ The official evaluation script computes aggregate evidence F-score by comparing 
 
 \subsection{Experimental Setup}
 
-All reported development numbers are produced by v13.ipynb and summarised in v13\_experiment\_summary.md. We use seed 42 for the main run. Reranker and classifier checkpoints are saved under outputs\_notebook\_v13; candidate lists, cross-encoder scores, and final evidence sets are cached for reproducibility. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
+All reported development numbers are produced by the submitted notebook, Group56.ipynb. We use seed 42 for the main run. The full search is intentionally sequential: retraining rerankers and classifiers for every preprocessing and BM25 combination would multiply the compute cost.
 
 
 \subsection{Training, Search, and Class Balance}
 
 To reduce overfitting, both neural stages use validation-set checkpoint selection. The reranker is trained for three epochs, but after each epoch we rescore the development candidate pool and keep the checkpoint with the highest development retrieval F-score. The classifier is trained for up to four epochs, and the saved checkpoint is the epoch with the best development accuracy, using harmonic mean as a tie-breaker. In practice, this behaves as early stopping because the final model is not necessarily the last epoch. For example, the reranker loss keeps decreasing from 0.3809 to 0.2291, but development F-score decreases after epoch 1; therefore epoch 1 is selected.
 
-Table~\ref{tab:search-space} summarises the main search space. We use grid search for the stages where the choice can be evaluated directly on development data: first-stage retrieval is selected by recall@500, evidence selection is selected by evidence F-score, and classifier settings are selected by development accuracy and per-class behaviour. Class imbalance is handled through weighted cross-entropy. For a class $y$ with training count $n_y$, the unnormalised weight is $(N/n_y)^p$, where $p=0$ gives no weighting, $p=0.5$ gives square-root inverse-frequency weighting, and $p=1$ gives full inverse-frequency weighting. The weights are then renormalised so that their sum equals the number of labels.
+Table~\ref{tab:search-space} summarises the main search space. The search is organised around the role of each module rather than one single metric. For the first-stage retriever, the goal is not to output the final evidence directly, but to create a candidate pool with high gold-evidence coverage. We therefore tune preprocessing and BM25 parameters by recall@500. The value 500 is used as a recall-oriented but still tractable pool size: it is large enough to include many gold passages that lexical ranking misses at top-5, but small enough for cross-encoder reranking to remain feasible because reranking cost grows linearly with the number of claim--evidence pairs. After this broad recall stage, evidence selection is tuned by final evidence F-score, and classifier settings are selected by development accuracy together with per-class behaviour.
+
+We examine class imbalance through weighted cross-entropy. For a class $y$ with training count $n_y$, the unnormalised weight is $(N/n_y)^p$, where $p=0$ gives no weighting, $p=0.5$ gives square-root inverse-frequency weighting, and $p=1$ gives full inverse-frequency weighting. The weights are then renormalised so that their sum equals the number of labels. We report all three settings because the highest overall accuracy and the best minority-class recall do not occur under the same weighting scheme.
 
 \begin{table}[t]
   \centering
@@ -188,7 +190,7 @@ Table~\ref{tab:search-space} summarises the main search space. We use grid searc
     \textbf{Stage} & \textbf{Grid or selection rule} \\
     \midrule
     Sparse retrieval & 3 preprocessing $\times$ 5 retrieval configs \\
-    BM25s top-$K$ diagnostic & $K \in \{5,20,50,100,200,500\}$ \\
+    BM25 top-$K$ diagnostic & $K \in \{5,20,50,100,200,500,1000\}$ \\
     Reranker checkpoint & best dev F over 3 epochs \\
     Evidence selection & fixed-$K$, threshold, relative-$\delta$ \\
     Classifier backbone & DistilBERT, MiniLM-MARCO, MiniLM-NLI \\
@@ -206,9 +208,9 @@ We use two majority-label baselines. Both predict \textsc{Supports} for every cl
 
 \section{Results}
 
-\subsection{BM25s Candidate Pool Size}
+\subsection{BM25 Candidate Pool Size}
 
-Before applying the neural reranker, we first examine how many BM25s candidates should be kept from the coarse ranking stage. Table~\ref{tab:bm25s-topk} reports a development-set diagnostic using an earlier default BM25 setting. As $K$ increases, recall rises from 0.1603 at top-5 to 0.6179 at top-500, showing that many gold evidence passages are not ranked in the very top positions by lexical matching alone. At the same time, precision and evidence F1 decrease because the predicted set becomes much larger and noisier. We therefore do not use top-500 as the final evidence output. Instead, we use it as a candidate pool for later reranking and selection.
+Before applying the neural reranker, we first examine how many BM25 candidates should be kept from the coarse ranking stage. This experiment should be read as a candidate-pool diagnostic, not as the final evidence-selection result. Table~\ref{tab:bm25s-topk} shows that when BM25 output is evaluated directly, increasing $K$ improves recall from 0.1603 at top-5 to 0.6949 at top-1000. This means many gold passages are present in the wider lexical ranking but are not close enough to the top to be submitted directly. However, precision and evidence F1 decrease as $K$ grows, because most extra passages are non-gold evidence. Therefore, a large $K$ is useful for recall coverage, but it is not suitable as the final evidence output.
 
 \begin{table}[t]
   \centering
@@ -216,7 +218,7 @@ Before applying the neural reranker, we first examine how many BM25s candidates 
   \setlength{\tabcolsep}{5pt}
   \begin{tabular}{rrrr}
     \toprule
-    \textbf{BM25s top-$K$} & \textbf{Recall} & \textbf{Precision} & \textbf{F1} \\
+    \textbf{BM25 top-$K$} & \textbf{Recall} & \textbf{Precision} & \textbf{F1} \\
     \midrule
     5   & 0.1603 & 0.0896 & 0.1077 \\
     20  & 0.2732 & 0.0390 & 0.0662 \\
@@ -224,13 +226,14 @@ Before applying the neural reranker, we first examine how many BM25s candidates 
     100 & 0.4392 & 0.0131 & 0.0252 \\
     200 & 0.5173 & 0.0078 & 0.0154 \\
     500 & 0.6179 & 0.0038 & 0.0075 \\
+    1000 & 0.6949 & 0.0021 & 0.0042 \\
     \bottomrule
   \end{tabular}
-  \caption{BM25s coarse-ranking diagnostic on the development set with different candidate-pool sizes.}
+  \caption{BM25 coarse-ranking diagnostic on the development set with different candidate-pool sizes. The table evaluates the direct top-$K$ list before neural reranking, so F1 decreases as noisy candidates are added.}
   \label{tab:bm25s-topk}
 \end{table}
 
-This comparison explains why we choose a large candidate pool for the first stage. A small $K$ gives a cleaner but low-recall evidence list, while a large $K$ gives the downstream cross-encoder a much better chance to see at least one gold passage. The top-500 setting is therefore a recall-oriented design choice rather than a final retrieval output.
+This result motivates why the final pipeline uses a broad but bounded candidate pool. Top-5 is too narrow because it misses many gold passages, while top-500 gives the reranker a much larger opportunity to recover relevant evidence. Top-1000 further increases raw recall from 0.6179 to 0.6949, so it confirms that some additional gold evidence remains beyond rank 500. However, this gain comes with lower direct F1 and would double the number of cross-encoder forward passes in the reranking stage. We therefore use top-500 as a practical compromise: it provides much higher recall coverage than small candidate pools while keeping MiniLM reranking tractable in Colab. The later MiniLM reranker and relative-$\delta$ selector then reduce this broad candidate pool to about four final evidence passages per claim.
 
 
 \begin{table*}[t]
@@ -271,12 +274,11 @@ This comparison explains why we choose a large candidate pool for the first stag
 
 \subsection{Sparse Retrieval and Preprocessing Analysis}
 \label{sec:sparse-retrieval-analysis}
-This stage conducts a grid search through 3 preprocessing schemes and 5 retrieval configurations, resulting in a total of 15 experimental groups. The experiment takes BM25 top-5 as the initial baseline, and Recall@500 is used as the primary metric to measure the theoretical upper limit of system performance.  
+After selecting top-500 as the candidate-pool size for the final reranking pipeline, we tune the sparse retriever itself. This stage conducts a grid search through 3 preprocessing schemes and 5 retrieval configurations, resulting in 15 experimental groups. Recall@500 is again used as the primary metric because this stage defines the upper bound for the reranker: if a gold passage is not included in the candidate pool, no downstream module can select it.
 
-As shown in Table~\ref{tab:results}, PP3 + BM25 ($k_1=1.2$, $b=0.5$) achieved the best results. The performance of BM25 is consistently better than that of TF-IDF, and the recall rate after incorporating Porter Stemming (PP3) increased by approximately 2.8\% compared to PP2. This confirms our expectation that given the specialized vocabulary in the climate domain, the normalization of word forms is crucial to capture semantic associations. In addition, by lowering the b parameter to 0.50, Recall was steadily improved, indicating that when dealing with the generally short sentences in the evidence corpus, a reduced length penalty can capture key information more accurately than the default configuration.  
+As shown in Table~\ref{tab:results}, PP3 + BM25 ($k_1=1.2$, $b=0.5$) achieved the best recall@500 score of 0.6782. BM25 is consistently stronger than TF-IDF, and Porter stemming improves recall by reducing surface-form mismatch between claims and evidence. Lowering the BM25 length-normalisation parameter to $b=0.50$ also helps, suggesting that strong length penalties are not ideal for the short evidence passages in this corpus.
 
-
-Although the best-configured Recall@500 reached 0.6782, the F1-score of its direct Top-5 was only 0.1234. Combined with the subsequent Error Bucket analysis, we found that 27.27\% of claims still face Retrieval Failure. This demonstrates that sparse retrieval based on lexical matching has inherent limitations when dealing with a massive 1.2M-passage corpus; many climate statements involve complex semantic expressions, making it impossible to bridge the "semantic gap" by relying on keyword matching alone. These quantitative results strongly justify the necessity of introducing deep semantic reranking (Reranker) in the next stage to compensate for the precision deficit of lexical matching.
+This result connects naturally with the previous top-$K$ diagnostic. The diagnostic explains why we need a wide candidate pool, while Table~\ref{tab:results} explains which lexical ranking should be used to fill that pool. However, the best sparse setup still has a direct top-5 F-score of only 0.1234, and later error analysis shows that 27.3\% of claims still suffer retrieval failure. Thus BM25 is useful as a high-recall first stage, but lexical matching alone is not reliable enough for final evidence submission. This motivates the MiniLM cross-encoder reranker and the relative-$\delta$ selector in the next stage.
 
 \subsection{Reranking and Evidence Selection}
 \label{sec:retrieval-results}
@@ -409,6 +411,14 @@ Because \textsc{Disputed} claims often require detecting conflict between eviden
 We also run an oracle diagnostic by replacing retrieved development evidence with gold evidence. This raises evidence F-score to 1.0 and therefore $H$ to 0.5806, but label accuracy falls from 0.4805 to 0.4091. The drop implies that the classifier is not simply waiting for cleaner evidence; it is sensitive to the evidence distribution seen at training and may rely on label priors or noisy retrieval patterns.
 
 Finally, we bucket errors by whether retrieval hits at least one gold evidence passage and whether the label is correct. Only 27.9\% of claims are both retrieval-hit and label-correct. Another 24.7\% have a retrieval hit but a wrong label, 27.3\% fail both retrieval and classification, and the remaining 20.1\% are ``lucky'' cases where the label is correct without any gold evidence in the retrieved set, most likely from label-prior or claim-text shortcuts. This split shows that future improvements must target both candidate recall and evidence-conditioned reasoning.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.95\columnwidth]{error_analysis_pie_chart.png}
+  \caption{Distribution of error-analysis buckets on the development set.
+  The buckets are defined by whether the retrieval module retrieves at least one gold evidence passage and whether the classifier predicts the correct label.}
+  \label{fig:error-buckets}
+\end{figure}
 
 \section{Conclusion}
 
