@@ -1,18 +1,18 @@
 # Fdb version 4
-["bibtex acl_latex"] 1779496567.00854 "acl_latex.aux" "acl_latex.bbl" "acl_latex" 1779496568.9805 0
-  "./acl_natbib.bst" 1779301490 45186 3d1af46d62cc9172ef6e42b56c1cd613 ""
-  "./custom.bib" 1779350865 4915 08198f4e1d857dd27809160660006970 ""
-  "acl_latex.aux" 1779496568 7536 ab539e8d48ff34a3f00b5bffeb00009c "pdflatex"
+["bibtex acl_latex"] 1779510829.93042 "acl_latex.aux" "acl_latex.bbl" "acl_latex" 1779510831.8176 0
+  "./acl_natbib.bst" 1779499516 47126 3d1af46d62cc9172ef6e42b56c1cd613 ""
+  "./custom.bib" 1779499518 5055 08198f4e1d857dd27809160660006970 ""
+  "acl_latex.aux" 1779510831 7759 24abf6e9795494c2b019c5f853125008 "pdflatex"
   (generated)
   "acl_latex.bbl"
   "acl_latex.blg"
   (rewritten before read)
-["pdflatex"] 1779496567.34728 "d:/_Search/_Study/COMP90042-NLP/A3_Group/COMP90042_2026/report/latex/acl_latex.tex" "acl_latex.pdf" "acl_latex" 1779496568.98124 0
-  "acl.sty" 1779301490 11615 e2c027f483aa40e577ed34264c8b0655 ""
-  "acl_latex.aux" 1779496568 7536 ab539e8d48ff34a3f00b5bffeb00009c "pdflatex"
-  "acl_latex.bbl" 1779496567 2943 733bcfd7656b8359af04099134dd1d6f "bibtex acl_latex"
-  "acl_latex.out" 1779496568 3008 60bb6c2d5cc05114ec600a75a21c58a3 "pdflatex"
-  "acl_latex.tex" 1779496562 26886 b0e1125e4ac7ebb281829ba618e475ea ""
+["pdflatex"] 1779510830.23075 "d:/_Search/_Study/COMP90042-NLP/A3_Group/COMP90042_2026/report/latex/acl_latex.tex" "acl_latex.pdf" "acl_latex" 1779510831.81834 0
+  "acl.sty" 1779499516 11927 e2c027f483aa40e577ed34264c8b0655 ""
+  "acl_latex.aux" 1779510831 7759 24abf6e9795494c2b019c5f853125008 "pdflatex"
+  "acl_latex.bbl" 1779510830 2943 733bcfd7656b8359af04099134dd1d6f "bibtex acl_latex"
+  "acl_latex.out" 1779510831 3056 7cb1ff81fa60e34a3a42079444e6037c "pdflatex"
+  "acl_latex.tex" 1779510774 26742 93a69da57e994ed591531faa676cfc60 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/enc/dvips/base/8r.enc" 1761738531 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/map/fontname/texfonts.map" 1761738951 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/adobe/times/ptmb8r.tfm" 1761742326 4524 6bce29db5bc272ba5f332261583fee9c ""
@@ -44,13 +44,14 @@
   "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy10.tfm" 1761739774 520 82a3d37183f34b6eb363a161dfc002c2 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy5.tfm" 1761739774 520 d082ac03a1087bc1ec2a06e24a9f68c0 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy6.tfm" 1761739774 520 4889cce2180234b97cad636b6039c722 ""
+  "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy7.tfm" 1761739774 520 a74c6ed8cb48679fdc3ea874d9d34a7e ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy8.tfm" 1761739774 520 7bb3abb160b19e0ed6ac404bb59052b7 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/tfm/public/latex-fonts/lasy9.tfm" 1761739774 520 1cc7cc05f4d7bae5c23bf7516f88fa52 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb" 1761737106 36299 5f9df58c2139e7edcf37c8fca4bd384d ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb" 1761737106 35469 dcf3a5f2fc1862f5952e3ee5eb1d98c4 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb" 1761737106 36094 798f80770b3b148ceedd006d487db67c ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1761737106 35752 024fb6c41858982481f6968b5fc26508 ""
-  "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb" 1761737106 32734 69e00a6b65cedb993666e42eedb3d48f ""
+  "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1761737106 32762 7fee39e011c23b3589931effd97b9702 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1761737106 32726 39f0f9e62e84beb801509898a605dbd5 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb" 1761737106 33993 9b89b85fd2d9df0482bd47194d1d3bf3 ""
   "d:/_Apps/texlive/2025/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1761737106 32569 5e5ddc8df908dea60932f3c484a54c0d ""
@@ -137,7 +138,8 @@
   "d:/_Apps/texlive/2025/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1761742882 5574165 a565d627396bcb07865e62a0bde12f3b ""
   "d:/_Apps/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt" 1761742983 3629546 783057c464d866f3c4101387ff5cb28e ""
   "d:/_Apps/texlive/2025/texmf.cnf" 1761742863 713 e69b156964470283e0530f5060668171 ""
-  "d:/_Search/_Study/COMP90042-NLP/A3_Group/COMP90042_2026/report/latex/acl_latex.tex" 1779496562 26886 b0e1125e4ac7ebb281829ba618e475ea ""
+  "d:/_Search/_Study/COMP90042-NLP/A3_Group/COMP90042_2026/report/latex/acl_latex.tex" 1779510774 26742 93a69da57e994ed591531faa676cfc60 ""
+  "retrieval_k_b.pdf" 1779510774 35719 f1630e522bab87bb658cc423e3ee9011 ""
   (generated)
   "acl_latex.aux"
   "acl_latex.log"

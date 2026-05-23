@@ -115,7 +115,7 @@ Table~\ref{tab:search-space} summarises the main search space. We use grid searc
   \centering
   \small
   \setlength{\tabcolsep}{3.5pt}
-  \begin{tabular}{ll}
+  \begin{tabular}{@{}p{0.34\columnwidth}p{0.58\columnwidth}@{}}
     \toprule
     \textbf{Stage} & \textbf{Grid or selection rule} \\
     \midrule
@@ -140,7 +140,7 @@ We use two majority-label baselines. Both predict \textsc{Supports} for every cl
 
 \subsection{BM25s Candidate Pool Size}
 
-Before applying the neural reranker, we first examine how many BM25s candidates should be kept from the coarse ranking stage. Table~\ref{tab:bm25s-topk} reports the development-set diagnostic from nlp\_Project.ipynb. As $K$ increases, recall rises from 0.1603 at top-5 to 0.6179 at top-500, showing that many gold evidence passages are not ranked in the very top positions by lexical matching alone. At the same time, precision and evidence F1 decrease because the predicted set becomes much larger and noisier. We therefore do not use top-500 as the final evidence output. Instead, we use it as a candidate pool for later reranking and selection.
+Before applying the neural reranker, we first examine how many BM25s candidates should be kept from the coarse ranking stage. Table~\ref{tab:bm25s-topk} reports a development-set diagnostic using an earlier default BM25 setting. As $K$ increases, recall rises from 0.1603 at top-5 to 0.6179 at top-500, showing that many gold evidence passages are not ranked in the very top positions by lexical matching alone. At the same time, precision and evidence F1 decrease because the predicted set becomes much larger and noisier. We therefore do not use top-500 as the final evidence output. Instead, we use it as a candidate pool for later reranking and selection.
 
 \begin{table}[t]
   \centering
@@ -170,7 +170,7 @@ This comparison explains why we choose a large candidate pool for the first stag
 \small
 \begin{tabular}{rlllrrrrr}
 \toprule
-\textbf{ID} & \textbf{preproc} & \textbf{retrieval} & \textbf{method} & \textbf{dev\_recall@500} & \textbf{dev\_F@500} & \textbf{time\_s} & \textbf{k1} & \textbf{b} \\
+\textbf{ID} & \textbf{preproc} & \textbf{retrieval} & \textbf{method} & \textbf{dev\_recall@500} & \textbf{dev\_F@5} & \textbf{time\_s} & \textbf{k1} & \textbf{b} \\
 \midrule
 0 & PP3 & R-both & bm25 & 0.678247 & 0.123418 & 21.4 & 1.2 & 0.50 \\
 1 & PP3 & R-b05 & bm25 & 0.675758 & 0.121666 & 24.5 & 1.5 & 0.50 \\
@@ -210,32 +210,10 @@ As shown in Table~\ref{tab:results}, PP3 + BM25 ($k_1=1.2$, $b=0.5$) achieved th
 
 Although the best-configured Recall@500 reached 0.6782, the F1-score of its direct Top-5 was only 0.1234. Combined with the subsequent Error Bucket analysis, we found that 27.27\% of claims still face Retrieval Failure. This demonstrates that sparse retrieval based on lexical matching has inherent limitations when dealing with a massive 1.2M-passage corpus; many climate statements involve complex semantic expressions, making it impossible to bridge the "semantic gap" by relying on keyword matching alone. These quantitative results strongly justify the necessity of introducing deep semantic reranking (Reranker) in the next stage to compensate for the precision deficit of lexical matching.
 
-\subsection{Retrieval and Selection}
+\subsection{Reranking and Evidence Selection}
 \label{sec:retrieval-results}
 
-Table~\ref{tab:retrieval} summarises the first-stage retrieval comparison. BM25 consistently outperforms TF-IDF, and Porter stemming is the most important preprocessing change. The final first-stage setting reaches 0.6782 recall@500, but its direct top-5 evidence F-score is only 0.1234, motivating reranking and evidence selection.
-
-\begin{table}[t]
-  \centering
-  \small
-  \setlength{\tabcolsep}{3.5pt}
-  \begin{tabular}{llrr}
-    \toprule
-    \textbf{Preproc.} & \textbf{Retriever} & \textbf{R@500} & \textbf{F@5} \\
-    \midrule
-    stem & BM25 $k_1=1.2,b=0.5$ & 0.6782 & 0.1234 \\
-    stem & BM25 $k_1=1.5,b=0.5$ & 0.6758 & 0.1217 \\
-    stem & BM25 $k_1=1.2,b=0.75$ & 0.6702 & 0.1266 \\
-    stem & TF-IDF & 0.6513 & 0.0919 \\
-    stop & BM25 $k_1=1.2,b=0.5$ & 0.6502 & 0.1209 \\
-    lower & BM25 $k_1=1.2,b=0.5$ & 0.6194 & 0.1313 \\
-    \bottomrule
-  \end{tabular}
-  \caption{Representative first-stage retrieval results. ``stem'' means lowercasing, stopword removal, and Porter stemming.}
-  \label{tab:retrieval}
-\end{table}
-
-The reranker peaks after one epoch: training loss decreases from 0.3809 to 0.2632 and 0.2291 over three epochs, but quick development F drops from 0.1961 to 0.1911 and 0.1806. This suggests that the cross-encoder quickly learns useful relevance signals but begins to overfit the 20,610 pair training set.
+After selecting the sparse retriever, we train the MiniLM reranker on the best top-500 BM25 candidate pool. The reranker peaks after one epoch: training loss decreases from 0.3809 to 0.2632 and 0.2291 over three epochs, but quick development F drops from 0.1961 to 0.1911 and 0.1806. This suggests that the cross-encoder quickly learns useful relevance signals but begins to overfit the 20,610 pair training set.
 
 Selection results in Table~\ref{tab:selection} show that relative-delta selection is better than fixed-$K$ and global thresholds. A global threshold assumes scores are calibrated across claims, but cross-encoder logits vary by claim. The relative rule instead asks how close each evidence passage is to the best passage for the same claim.
 
@@ -343,7 +321,7 @@ The confusion matrix in Table~\ref{tab:confusion} makes the classifier limitatio
 
 Seed variance confirms that the classifier result should not be overinterpreted. With the same retrieval fixed and seeds 42, 123, and 2024, mean accuracy is $0.4892 \pm 0.0201$ and mean $H$ is $0.3262 \pm 0.0046$. Retrieval F-score is unchanged because evidence selection is fixed.
 
-Because \textsc{Disputed} claims often require detecting conflict between evidence passages, we also tried a lightweight Qwen2.5-3B-Instruct cascade. For claims currently predicted as \textsc{Supports} or \textsc{Refutes} with at least two retrieved passages, the model was prompted to answer whether the passages contradicted each other; a positive answer would change the label to \textsc{Disputed}. As Table~\ref{tab:llm-cascade} shows, the cascade made no label changes on the 130 eligible development claims, so it did not improve the final metrics. This negative result suggests that a zero-shot contradiction prompt is not enough; a useful conflict module would likely need stronger evidence-level NLI supervision or calibration.
+Because \textsc{Disputed} claims often require detecting conflict between evidence passages, we also tried an open-source Qwen2.5-3B-Instruct cascade. For claims currently predicted as \textsc{Supports} or \textsc{Refutes} with at least two retrieved passages, the model was prompted to answer whether the passages contradicted each other; a positive answer would change the label to \textsc{Disputed}. As Table~\ref{tab:llm-cascade} shows, the cascade made no label changes on the 130 eligible development claims, so it did not improve the final metrics. This negative result suggests that a zero-shot contradiction prompt is not enough; a useful conflict module would likely need stronger evidence-level NLI supervision or calibration.
 
 \begin{table}[t]
   \centering

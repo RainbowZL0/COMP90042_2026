@@ -19,6 +19,7 @@ dependencies = [
     "accelerate>=1.13.0",
     "scipy-stubs~=1.17.1",
     "nltk>=3.9.4",
+    "python-pptx>=1.0.2",
 ]
 
 
