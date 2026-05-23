@@ -9,6 +9,10 @@
 \usepackage{microtype}
 \usepackage{inconsolata}
 
+\usepackage{float}
+\usepackage{placeins}
+\usepackage{flafter}
+
 \usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{graphicx}
@@ -23,7 +27,7 @@
 \maketitle
 
 \begin{abstract}
-We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, and a relative-delta rule selects a variable number of final evidence passages to avoid relying on cross-claim logit calibration. A second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval to estimate candidate-pool coverage, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward \textsc{Supports} and zero recall for \textsc{Refutes}.
+We describe a fact-checking system for climate-science claims that retrieves supporting evidence from a 1.2M-passage corpus and classifies each claim as \textsc{Supports}, \textsc{Refutes}, \textsc{Not Enough Info}, or \textsc{Disputed}. The system is built as a modular retrieval-then-classification pipeline: BM25 selects a broad candidate pool, a MiniLM cross-encoder reranks claim-evidence pairs, and a relative-delta rule selects a variable number of final evidence passages to avoid relying on cross-claim logit calibration. A second MiniLM cross-encoder predicts the claim label from the claim and selected evidence. We tune the pipeline with a sequential greedy ablation rather than a full factorial search, using recall@500 for first-stage retrieval to estimate candidate-pool coverage, evidence F-score for selection, and accuracy plus per-class recall for classification. On the development set, the final system obtains evidence F-score 0.2448, label accuracy 0.4805, and harmonic mean 0.3243. The largest gain comes from the retrieval pipeline: final retrieval doubles evidence F-score over raw BM25 top-5 evidence. Classification remains the main weakness, with a strong bias toward\cite{rafailov2023direct} \textsc{Supports} and zero recall for \textsc{Refutes}.
 \end{abstract}
 
 \section{Introduction}
@@ -146,9 +150,9 @@ Class imbalance is severe: \textsc{Supports} is the largest class and \textsc{Di
 
 \subsection{Data and Evaluation}
 
-The dataset statistics are shown in Table~\ref{tab:data-summary}. Training labels are imbalanced: 42.26\% \textsc{Supports}, 16.21\% \textsc{Refutes}, 31.43\% \textsc{NEI}, and 10.10\% \textsc{Disputed}. The average claim has 3.357 gold evidence passages, so selecting only one passage is usually insufficient.
+The dataset statistics are shown in Table~\ref{tab:data-summary}. The average claim has 3.357 gold evidence passages, so selecting only one passage is usually insufficient.
 
-\begin{table}[t]
+\begin{table}[H]
   \centering
   \small
   \begin{tabular}{lr}
@@ -165,6 +169,19 @@ The dataset statistics are shown in Table~\ref{tab:data-summary}. Training label
   \caption{Dataset summary.}
   \label{tab:data-summary}
 \end{table}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\columnwidth]{label_distribution.png}
+  \caption{Training label distribution.}
+  \label{fig:label-distribution}
+\end{figure}
+
+Figure~\ref{fig:label-distribution} shows that the training set is label-imbalanced.
+\textsc{Supports} is the largest class, while \textsc{Disputed} is the smallest.
+This motivates our later class-weighting experiment.
+
+\FloatBarrier
 
 The official evaluation script computes aggregate evidence F-score by comparing predicted evidence identifiers to gold identifiers, classification accuracy by comparing predicted labels to gold labels, and $H$ from Equation~\ref{eq:harmonic}. We report development results because test labels are unavailable locally; the notebook also generates test-output.json for leaderboard submission.
 
@@ -392,8 +409,7 @@ The confusion matrix in Table~\ref{tab:confusion} makes the classifier limitatio
 Seed variance confirms that the classifier result should not be overinterpreted. With the same retrieval fixed and seeds 42, 123, and 2024, mean accuracy is $0.4892 \pm 0.0201$ and mean $H$ is $0.3262 \pm 0.0046$. Retrieval F-score is unchanged because evidence selection is fixed.
 
 Because \textsc{Disputed} claims often require detecting conflict between evidence passages, we also tried an open-source Qwen2.5-3B-Instruct cascade. For claims currently predicted as \textsc{Supports} or \textsc{Refutes} with at least two retrieved passages, the model was prompted to answer whether the passages contradicted each other; a positive answer would change the label to \textsc{Disputed}. As Table~\ref{tab:llm-cascade} shows, the cascade made no label changes on the 130 eligible development claims, so it did not improve the final metrics. This negative result suggests that a zero-shot contradiction prompt is not enough; a useful conflict module would likely need stronger evidence-level NLI supervision or calibration.
-
-\begin{table}[t]
+\begin{table}[H]
   \centering
   \small
   \begin{tabular}{lrrr}
@@ -412,13 +428,14 @@ We also run an oracle diagnostic by replacing retrieved development evidence wit
 
 Finally, we bucket errors by whether retrieval hits at least one gold evidence passage and whether the label is correct. Only 27.9\% of claims are both retrieval-hit and label-correct. Another 24.7\% have a retrieval hit but a wrong label, 27.3\% fail both retrieval and classification, and the remaining 20.1\% are ``lucky'' cases where the label is correct without any gold evidence in the retrieved set, most likely from label-prior or claim-text shortcuts. This split shows that future improvements must target both candidate recall and evidence-conditioned reasoning.
 
-\begin{figure}[t]
+\begin{figure}[H]
   \centering
-  \includegraphics[width=0.95\columnwidth]{error_analysis_pie_chart.png}
-  \caption{Distribution of error-analysis buckets on the development set.
-  The buckets are defined by whether the retrieval module retrieves at least one gold evidence passage and whether the classifier predicts the correct label.}
+  \includegraphics[width=0.88\columnwidth]{error_analysis.png}
+  \caption{Distribution of error-analysis buckets on the development set.}
   \label{fig:error-buckets}
 \end{figure}
+
+\FloatBarrier
 
 \section{Conclusion}
 
@@ -434,6 +451,8 @@ The most promising future directions are therefore targeted rather than architec
   \item Kexing Ma (1697372): contributed to retrieval experiments, reranker development, evaluation, and report writing.
 \end{itemize}
 
+
 \bibliography{custom}
 
 \end{document}
+\cite{yao2023react}
