@@ -36,7 +36,7 @@ Automated fact-checking requires both finding relevant evidence and reasoning ov
 
 The main challenge is that the final score rewards balanced performance. A strong classifier cannot help if the right evidence never enters the candidate pool, while high-recall retrieval is insufficient if the selected passages are noisy or the classifier falls back to majority-class behavior. Our design therefore separates the problem into three questions: can sparse retrieval include the gold evidence in a manageable pool, can a cross-encoder reranker improve the final evidence set, and can a lightweight classifier use that evidence to improve over a majority-label baseline?
 
-We find that the retrieval side is effective but still far from solved. Stemming and BM25 tuning improve recall@500, and MiniLM reranking plus relative-delta evidence selection raises development evidence F-score from 0.1234 for raw BM25 top-5 to 0.2448. The classifier, however, improves accuracy over an all-\textsc{Supports} baseline by only 3.9 percentage points. Error analysis shows that retrieval failures and classification failures are both substantial, and oracle retrieval does not automatically improve label accuracy, suggesting that evidence reasoning remains fragile and heavily dependent on specific data distributions rather than robust logic.
+We find that retrieval is effective but still far from solved. Stemming and BM25 tuning improve recall@500, and MiniLM reranking plus relative-delta selection raises development evidence F-score from 0.1234 for raw BM25 top-5 to 0.2448. The classifier improves over an all-\textsc{Supports} baseline by only 3.9 points. Error analysis shows substantial retrieval and classification failures, and oracle retrieval does not automatically improve label accuracy, suggesting fragile evidence reasoning.
 
 \section{Approach}
 
@@ -119,7 +119,7 @@ We optimize modules with local development metrics, then evaluate the full pipel
 
 \subsection{First-Stage Retrieval}
 
-The first stage uses sparse lexical retrieval. We compare TF-IDF and the BM25 ranking function \citep{robertson2009probabilistic}, implemented with the Python \texttt{bm25s} library, with three preprocessing settings: lowercasing only, lowercasing plus stopword removal, and lowercasing plus stopword removal plus Porter stemming \citep{porter1980algorithm}. We choose the first-stage configuration by development recall@500, because evidence that is absent from the top-500 pool cannot be recovered by downstream reranking.
+The first stage uses sparse lexical retrieval. We compare TF-IDF and the BM25 ranking function \citep{robertson2009probabilistic}, implemented with the Python \texttt{bm25s} library \citep{lu2024bm25s}, with three preprocessing settings: lowercasing only, lowercasing plus stopword removal, and lowercasing plus stopword removal plus Porter stemming. We choose the first-stage configuration by development recall@500, because evidence that is absent from the top-500 pool cannot be recovered by downstream reranking.
 
 The selected setting is BM25 with lowercasing, stopword removal, Porter stemming, $k_1=1.2$, and $b=0.5$. This retrieves 500 candidates per claim for train, development, and test splits.
 
@@ -194,9 +194,9 @@ All reported development numbers are produced by the submitted implementation. W
 
 To reduce overfitting, both neural stages use validation-set checkpoint selection. The reranker is trained for three epochs, but after each epoch we rescore the development candidate pool and keep the checkpoint with the highest development retrieval F-score. The classifier is trained for up to four epochs, and the saved checkpoint is the epoch with the best development accuracy, using harmonic mean as a tie-breaker. In practice, this behaves as early stopping because the final model is not necessarily the last epoch. For example, the reranker loss keeps decreasing from 0.3809 to 0.2291, but development F-score decreases after epoch 1; therefore epoch 1 is selected.
 
-Table~\ref{tab:search-space} summarises the main search space. The search is organised around the role of each module rather than one single metric. For the first-stage retriever, the goal is not to output the final evidence directly, but to create a candidate pool with high gold-evidence coverage. We therefore tune preprocessing and BM25 parameters by recall@500. The value 500 is used as a recall-oriented but still tractable pool size: it is large enough to include many gold passages that lexical ranking misses at top-5, but small enough for cross-encoder reranking to remain feasible because reranking cost grows linearly with the number of claim--evidence pairs. After this broad recall stage, evidence selection is tuned by final evidence F-score, and classifier settings are selected by development accuracy together with per-class behaviour.
+Table~\ref{tab:search-space} summarises the main search space. The search is organised around each module's role rather than one metric. The first-stage retriever should create a candidate pool with high gold-evidence coverage, so we tune preprocessing and BM25 parameters by recall@500. The value 500 is recall-oriented but still tractable: it includes many gold passages missed at top-5, while keeping cross-encoder reranking feasible because cost grows linearly with claim--evidence pairs. After this stage, evidence selection is tuned by final evidence F-score, and classifier settings by development accuracy and per-class behaviour.
 
-We examine class imbalance through weighted cross-entropy. For a class $y$ with training count $n_y$, the unnormalised weight is $(N/n_y)^p$, where $p=0$ gives no weighting, $p=0.5$ gives square-root inverse-frequency weighting, and $p=1$ gives full inverse-frequency weighting. The weights are then renormalised so that their sum equals the number of labels. We report all three settings because the highest overall accuracy and the best minority-class recall do not occur under the same weighting scheme.
+We examine class imbalance through weighted cross-entropy variants. For a class $y$ with training count $n_y$, the unnormalised weight is $(N/n_y)^p$, where $p=0$ gives no weighting, $p=0.5$ gives square-root inverse-frequency weighting, and $p=1$ gives full inverse-frequency weighting. The weights are then renormalised so that their sum equals the number of labels. We report all three settings because the highest overall accuracy and the best minority-class recall do not occur under the same weighting scheme.
 
 \begin{table}[t]
   \centering
@@ -250,7 +250,7 @@ Before applying the neural reranker, we first examine how many BM25 candidates s
   \label{tab:bm25s-topk}
 \end{table}
 
-This result motivates why the final pipeline uses a broad but bounded candidate pool. Top-5 is too narrow because it misses many gold passages, while top-500 gives the reranker a much larger opportunity to recover relevant evidence. Top-1000 further increases raw recall from 0.6179 to 0.6949, so it confirms that some additional gold evidence remains beyond rank 500. However, this gain comes with lower direct F1 and would double the number of cross-encoder forward passes in the reranking stage. We therefore use top-500 as a practical compromise: it provides much higher recall coverage than small candidate pools while keeping MiniLM reranking tractable in Colab. The later MiniLM reranker and relative-$\delta$ selector then reduce this broad candidate pool to about four final evidence passages per claim.
+This result motivates a broad but bounded candidate pool. Top-5 is too narrow, while top-500 gives the reranker more opportunity to recover relevant evidence. Top-1000 further increases raw recall from 0.6179 to 0.6949, confirming that some gold evidence remains beyond rank 500. However, it lowers direct F1 and would double cross-encoder forward passes. We therefore use top-500 as a practical compromise, then rely on the MiniLM reranker and relative-$\delta$ selector to reduce the pool to about four final passages per claim.
 
 
 \begin{table*}[t]
@@ -365,7 +365,7 @@ After selecting MiniLM-MARCO, we compare class weighting in Table~\ref{tab:weigh
 
 \subsection{Final Development Results}
 
-Table~\ref{tab:main-results} compares the final system to majority-label baselines. The final retrieval output doubles evidence F-score over BM25 top-5 evidence, improving $H$ from 0.1929 to 0.3150 even when the label is always \textsc{Supports}. The classifier then raises accuracy from 0.4416 to 0.4805, giving final $H=0.3243$. Thus most of the measured improvement comes from retrieval, while classification contributes a smaller but real gain.
+Table~\ref{tab:main-results} compares the final system to majority-label baselines. The final retrieval output doubles evidence F-score over BM25 top-5 evidence, improving $H$ from 0.1929 to 0.3150 even when the label is always \textsc{Supports}. The classifier then raises accuracy from 0.4416 to 0.4805, giving final $H=0.3243$. Thus most of the measured improvement comes from retrieval, while classification contributes a smaller but real gain. The hidden leaderboard score was lower ($H=0.28$), suggesting that the system's generalization remains limited. Because hidden labels and evidence annotations are unavailable, we do not attribute this gap to a specific test-set distribution; the development error analysis instead points to the classifier's majority-class bias as a plausible source of fragility.
 
 \begin{table}[t]
   \centering
@@ -408,7 +408,7 @@ The confusion matrix in Table~\ref{tab:confusion} makes the classifier limitatio
 
 Seed variance confirms that the classifier result should not be overinterpreted. With the same retrieval fixed and seeds 42, 123, and 2024, mean accuracy is $0.4892 \pm 0.0201$ and mean $H$ is $0.3262 \pm 0.0046$. Retrieval F-score is unchanged because evidence selection is fixed.
 
-Because \textsc{Disputed} claims often require detecting conflict between evidence passages, we also tried an open-source Qwen2.5-3B-Instruct cascade. For claims currently predicted as \textsc{Supports} or \textsc{Refutes} with at least two retrieved passages, the model was prompted to answer whether the passages contradicted each other; a positive answer would change the label to \textsc{Disputed}. As Table~\ref{tab:llm-cascade} shows, the cascade made no label changes on the 130 eligible development claims, so it did not improve the final metrics. This negative result suggests that a zero-shot contradiction prompt is not enough; a useful conflict module would likely need stronger evidence-level NLI supervision or calibration.
+Because \textsc{Disputed} claims often require detecting conflict between evidence passages, we also tried an open-source Qwen2.5-3B-Instruct cascade \citep{qwen_qwen25_2025}. For claims currently predicted as \textsc{Supports} or \textsc{Refutes} with at least two retrieved passages, the model was prompted to answer whether the passages contradicted each other; a positive answer would change the label to \textsc{Disputed}. As Table~\ref{tab:llm-cascade} shows, the cascade made no label changes on the 130 eligible development claims, so it did not improve the final metrics. This negative result suggests that a zero-shot contradiction prompt is not enough; a useful conflict module would likely need stronger evidence-level NLI supervision or calibration.
 \begin{table}[H]
   \centering
   \small
@@ -430,7 +430,7 @@ Finally, we bucket errors by whether retrieval hits at least one gold evidence p
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=0.88\columnwidth]{error_analysis.png}
+  \includegraphics[width=0.88\columnwidth]{error_analysis_pie_chart.png}
   \caption{Distribution of error-analysis buckets on the development set.}
   \label{fig:error-buckets}
 \end{figure}
@@ -455,4 +455,3 @@ The most promising future directions are therefore targeted rather than architec
 \bibliography{custom}
 
 \end{document}
-\cite{yao2023react}

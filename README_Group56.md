@@ -1,9 +1,5 @@
 # Running the Submitted Code
 
-## Data
-
-Use the official assignment data in the same project layout expected by the released starter code. The submitted code assumes the training, development, test, and evidence data are available before execution.
-
 ## Environment
 
 The code was tested with Python 3.12. The main package versions in the working environment were:
@@ -36,7 +32,8 @@ Install a PyTorch build appropriate for the machine. A CUDA-enabled build was us
 
 ## Running
 
-Open the submitted code in Colab, VS Code, or Jupyter, then run all cells from top to bottom. The code creates its working outputs automatically and prints the development evaluation results during execution.
+Run all jupyter cells from top to bottom. The code creates its working outputs automatically and prints the development 
+evaluation results during execution.
 
 ## Expected Development Scores
 
