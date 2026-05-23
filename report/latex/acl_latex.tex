@@ -85,7 +85,7 @@ We find that the retrieval side is effective but still far from solved. Stemming
 \node[cls] (clsbox) at (8.9,  -3.9) {Cross-Encoder\\Classifier};
 \node[io]  (label)  at (13.5, -3.9) {Label $\hat{y}$};
 
-\draw[arr] (claim.south) -- ++(0,-3.425) -| (clsbox.west);
+\draw[arr] (claim.south) |- (clsbox.west);
 \draw[arr] (ev.south)    -- ++(0,-2.05)  -| (clsbox.north);
 \draw[arr] (clsbox) -- (label);
 
@@ -93,8 +93,8 @@ We find that the retrieval side is effective but still far from solved. Stemming
 \node[note] at (13.5, -4.75) {SUPPORTS / REFUTES /\\NEI / DISPUTED};
 
 % Band labels on the left (placed slightly off the row y to avoid sharing the arrow line)
-\node[band, anchor=east] at (-0.2,  0.0)  {(a) Retrieval};
-\node[band, anchor=east] at (-0.2, -3.9)  {(b) Classification};
+\node[band, anchor=west] at (-3.7,  0.0)  {(a) Retrieval};
+\node[band, anchor=west] at (-3.7, -3.9)  {(b) Classification};
 
 \end{tikzpicture}%
 }
